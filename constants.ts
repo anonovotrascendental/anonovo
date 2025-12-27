@@ -1,5 +1,5 @@
 
-export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoR_cvW3Yiona7JsaaAbA4T8nrZNSIBVhWOEMWoUrhIUAE3w3675hObkuCnLke67KT/exec"; // User provides this
+export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoR_cvW3Yiona7JsaaAbA4T8nrZNSIBVhWOEMWoUrhIUAE3w3675hObkuCnLke67KT/exec";
 export const ADMIN_PASSWORD = "2705";
 export const ORGANIZER_PHONE = "554896597389";
 
@@ -8,7 +8,7 @@ export const EVENT_INFO = {
   location: "Palhoça, SC",
   venue: "Rancho Serra Mar",
   guest: "Srila Gurudeva",
-  dates: "31/12 (18:00) - 02/01",
+  dates: "30/12 - 03/01",
   description: "Celebração espiritual de ano novo com mantras, ensinamentos védicos e prasadam sagrado.",
 };
 

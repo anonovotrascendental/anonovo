@@ -6,9 +6,8 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
   const apiKey = process.env.API_KEY;
   if (!apiKey) return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
 
-  const ai = new GoogleGenAI({ apiKey });
-  
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `You are a spiritual assistant for the event "${EVENT_INFO.title}" featuring ${EVENT_INFO.guest}. 
@@ -22,7 +21,7 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
     });
     return response.text ?? "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Spiritual Guidance Error:", error);
     return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
   }
 };
@@ -31,9 +30,8 @@ export const askAiAboutEvent = async (question: string): Promise<string> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) return "Desculpe, o assistente está temporariamente indisponível.";
 
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Informação do Evento:
@@ -53,6 +51,7 @@ export const askAiAboutEvent = async (question: string): Promise<string> => {
     });
     return response.text ?? "Desculpe, não consegui processar sua pergunta agora. Por favor, entre em contato com os organizadores.";
   } catch (error) {
-    return "Desculpe, não consegui processar sua pergunta agora. Por favor, entre em contato com os organizadores.";
+    console.error("Gemini Ask AI Error:", error);
+    return "Desculpe, não consegui processar sua pergunta agora. Pode ser um erro de conexão temporário.";
   }
 };

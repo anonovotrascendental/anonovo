@@ -1,8 +1,10 @@
 
 export interface ParticipationDays {
+  day30: boolean;
   day31: boolean;
   day01: boolean;
   day02: boolean;
+  day03: boolean;
 }
 
 export type ParticipationType = 'hosting' | 'dayuse' | null;
@@ -29,8 +31,11 @@ export type AppView = 'form' | 'login' | 'admin' | 'success';
 
 export interface AdminStats {
   total: number;
+  day30: number;
   day31: number;
   day01: number;
   day02: number;
+  day03: number;
+  hosting: number;
   restrictions: number;
 }

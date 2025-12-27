@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Calendar, 
@@ -15,7 +15,12 @@ import {
   Copy,
   Check,
   MapPin,
-  Clock
+  Clock,
+  Heart,
+  Wallet,
+  QrCode,
+  Sparkles,
+  Quote
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -24,7 +29,8 @@ import {
   ORGANIZER_PHONE, 
   GOOGLE_SCRIPT_URL,
   BLOOD_TYPES,
-  ACCOMMODATION_CONFIG
+  ACCOMMODATION_CONFIG,
+  PIX_CONFIG
 } from './constants';
 import { Input, Textarea } from './components/Input';
 import { Button } from './components/Button';
@@ -38,6 +44,8 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [spiritualMessage, setSpiritualMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [showHostingSuggestion, setShowHostingSuggestion] = useState(false);
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     participationType: null,
@@ -48,7 +56,7 @@ const App = () => {
     phone: '',
     bloodType: '',
     restrictions: '',
-    days: { day31: false, day01: false, day02: false }
+    days: { day30: false, day31: false, day01: false, day02: false, day03: false }
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -57,10 +65,14 @@ const App = () => {
   };
 
   const handleDayChange = (day: keyof ParticipationDays) => {
-    setFormData(prev => ({
-      ...prev,
-      days: { ...prev.days, [day]: !prev.days[day] }
-    }));
+    setFormData(prev => {
+      const newDays = { ...prev.days, [day]: !prev.days[day] };
+      const allSelected = Object.values(newDays).every(v => v);
+      if (allSelected) {
+        setShowHostingSuggestion(true);
+      }
+      return { ...prev, days: newDays };
+    });
   };
 
   const copyText = (text: string) => {
@@ -95,25 +107,47 @@ const App = () => {
     if (formData.participationType === 'hosting') {
       selectedDaysList.push("Hospedagem (Pacote 5 dias)");
     } else {
-      if (formData.days.day31) selectedDaysList.push("31/Dez (Quarta)");
-      if (formData.days.day01) selectedDaysList.push("01/Jan (Quinta)");
-      if (formData.days.day02) selectedDaysList.push("02/Jan (Sexta)");
+      if (formData.days.day30) selectedDaysList.push("30/Dez");
+      if (formData.days.day31) selectedDaysList.push("31/Dez (Virada)");
+      if (formData.days.day01) selectedDaysList.push("01/Jan");
+      if (formData.days.day02) selectedDaysList.push("02/Jan");
+      if (formData.days.day03) selectedDaysList.push("03/Jan");
     }
 
-    const payload = { ...formData, selectedDays: selectedDaysList.join(', ') };
+    const payload = { 
+      ...formData, 
+      selectedDays: selectedDaysList.join(', '),
+      timestamp: new Date().toLocaleString('pt-BR')
+    };
 
     try {
-      const guidance = await getSpiritualGuidance(formData.civilName, `Tipo: ${formData.participationType}. Dias: ${payload.selectedDays}`);
-      setSpiritualMessage(guidance ?? null);
+      // Chamada assíncrona para a IA
+      const guidancePromise = getSpiritualGuidance(
+        formData.spiritualName || formData.civilName.split(' ')[0], 
+        `Tipo de participação: ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}.`
+      );
 
+      // Tentativa de envio para o Google Sheets com melhor tratamento de erro
+      let sheetSuccess = false;
       if (GOOGLE_SCRIPT_URL) {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        try {
+          // Usando fetch padrão sem no-cors para permitir JSON, ou lidando com as limitações do GAS
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            // Nota: GAS redireciona, o fetch segue por padrão. 
+            // 'no-cors' impede a leitura do corpo mas evita erros de preflight se o servidor não suportar.
+            // Aqui optamos por deixar o navegador gerenciar, já que GAS suporta redirecionamentos.
+          });
+          sheetSuccess = true;
+        } catch (error) {
+          console.error("Erro ao enviar para Google Sheets:", error);
+          // Não bloqueamos o sucesso total pois o WhatsApp é o canal oficial
+        }
       }
+
+      const guidance = await guidancePromise;
+      setSpiritualMessage(guidance ?? null);
 
       const message = `*Inscrição - ${EVENT_INFO.title}* 🌸\n` +
         `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}\n` +
@@ -127,12 +161,45 @@ const App = () => {
       window.open(`https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
       setView('success');
     } catch (error) {
-      console.error(error);
-      alert("Erro ao processar inscrição.");
+      console.error("Erro geral no submit:", error);
+      alert("Houve um problema ao processar sua inscrição. Por favor, tente novamente ou contate o suporte.");
     } finally {
       setLoading(false);
     }
   };
+
+  const PixSection = ({ className = "" }: { className?: string }) => (
+    <div className={`bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center space-y-4 ${className}`}>
+      <div className="flex justify-center">
+        <div className="bg-emerald-100 p-3 rounded-full text-emerald-600">
+          <Heart size={24} fill="currentColor" className="animate-pulse" />
+        </div>
+      </div>
+      <div>
+        <h4 className="font-bold text-emerald-900">Contribuição Voluntária</h4>
+        <p className="text-xs text-emerald-700/70 mt-1">{PIX_CONFIG.description}</p>
+      </div>
+      
+      <div className="bg-white p-4 rounded-xl shadow-inner border border-emerald-50 space-y-3">
+        <div className="flex items-center justify-between gap-3 text-left">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Chave PIX</p>
+            <p className="text-sm font-mono text-slate-700 truncate font-bold">{PIX_CONFIG.key}</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => copyText(PIX_CONFIG.key)}
+            className="shrink-0 p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
+          >
+            {copied ? <Check size={18}/> : <Copy size={18}/>}
+          </button>
+        </div>
+        <div className="text-[10px] text-slate-400 text-left pt-2 border-t border-slate-50">
+          <p><strong>Favorecido:</strong> {PIX_CONFIG.receiver}</p>
+        </div>
+      </div>
+    </div>
+  );
 
   if (view === 'login') return (
     <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
@@ -159,27 +226,99 @@ const App = () => {
 
   if (view === 'success') return (
     <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-4 border-amber-500">
-        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-slate-800 mb-2 font-serif">Hare Krishna! 🙏</h2>
-        <p className="text-gray-600 mb-6">Inscrição iniciada. Se o WhatsApp abriu, envie a mensagem para confirmar.</p>
+      <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-t-8 border-amber-500 space-y-6 animate-in fade-in zoom-in-95 duration-500">
+        <div>
+          <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-inner">
+            <CheckCircle className="w-12 h-12" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2 font-serif">Inscrição Iniciada! 🙏</h2>
+          <p className="text-slate-500 text-sm">Se o WhatsApp abriu, envie a mensagem para confirmar sua vaga.</p>
+        </div>
         
         {spiritualMessage && (
-          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 mb-6 italic text-amber-900 text-sm">
-            "{spiritualMessage}"
+          <div className="relative group">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-md z-10">
+              <Sparkles size={10} /> Mensagem para você
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100 text-amber-900 text-sm relative overflow-hidden shadow-sm">
+              <Quote className="absolute -top-2 -left-2 text-amber-200/50" size={48} />
+              <p className="relative z-10 font-medium leading-relaxed italic">
+                {spiritualMessage}
+              </p>
+              <div className="mt-3 flex items-center justify-center gap-1 text-[10px] text-amber-700/50 uppercase tracking-widest font-bold">
+                Personalizado por IA Transcendental
+              </div>
+            </div>
           </div>
         )}
 
-        <Button variant="outline" onClick={() => { setView('form'); setStep(1); }} className="w-full">Nova Inscrição</Button>
+        <PixSection />
+
+        <div className="pt-4">
+          <Button variant="outline" onClick={() => { setView('form'); setStep(1); setSpiritualMessage(null); }} className="w-full">
+            Fazer outra inscrição
+          </Button>
+        </div>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-amber-50 py-8 px-4 font-sans flex flex-col items-center">
+      {showPixModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 flex justify-end">
+              <button onClick={() => setShowPixModal(false)} className="p-2 text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="px-6 pb-8">
+              <PixSection />
+              <Button onClick={() => setShowPixModal(false)} className="w-full mt-6" variant="primary">Fechar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHostingSuggestion && (
+        <div className="fixed inset-0 z-[110] bg-amber-900/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-t-8 border-amber-500 p-8 text-center space-y-6">
+            <div className="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto text-amber-600">
+              <Sparkles size={32} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-slate-800 font-serif">Experiência Completa!</h3>
+              <p className="text-slate-600 mt-2">
+                Notamos que você pretende vir em todos os dias do retiro. 
+                Que tal se hospedar conosco para uma imersão total? 
+              </p>
+            </div>
+            <div className="bg-amber-50 p-4 rounded-2xl text-left border border-amber-100">
+              <p className="text-amber-900 font-bold text-sm">Vantagens do Pacote:</p>
+              <ul className="text-xs text-amber-800 mt-2 space-y-1">
+                <li>• Pernoite no local (rancho paradisíaco)</li>
+                <li>• Todas as refeições inclusas (Café, Almoço, Jantar)</li>
+                <li>• Participação nas orações matinais (Mangala Arati)</li>
+                <li>• Convívio direto com Srila Gurudeva</li>
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => {
+                setFormData(prev => ({ ...prev, participationType: 'hosting' }));
+                setShowHostingSuggestion(false);
+              }}>
+                Quero o Pacote de Hospedagem
+              </Button>
+              <button onClick={() => setShowHostingSuggestion(false)} className="text-sm text-slate-400 hover:text-slate-600 underline">
+                Continuar com Day Use
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-amber-100">
-        
-        {/* Cabeçalho Original */}
         <div className="bg-gradient-to-b from-amber-400 to-amber-600 p-8 text-center relative">
           <div className="absolute top-4 left-4 opacity-30 text-white"><Leaf size={40} /></div>
           <h1 className="text-3xl md:text-4xl font-bold mb-1 text-white drop-shadow-md font-serif">{EVENT_INFO.title}</h1>
@@ -214,7 +353,7 @@ const App = () => {
                   className={`p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center ${formData.participationType === 'hosting' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500' : 'border-gray-100 bg-gray-50'}`}
                 >
                   <div>
-                    <p className="font-bold text-gray-800">Vou me hospedar</p>
+                    <p className="font-bold text-gray-800">Vou me hospedar (Completo)</p>
                     <p className="text-xs text-gray-500">Pacote {ACCOMMODATION_CONFIG.days} - R$ {ACCOMMODATION_CONFIG.price.toFixed(2).replace('.', ',')}</p>
                   </div>
                   {formData.participationType === 'hosting' && <CheckCircle className="text-amber-600" size={20} />}
@@ -233,7 +372,6 @@ const App = () => {
                 </button>
               </div>
 
-              {/* Lógica de Hospedagem */}
               {formData.participationType === 'hosting' && (
                 <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100 space-y-4 animate-in slide-in-from-top-2">
                   <p className="text-center font-bold text-blue-900 text-sm">Já tem reserva confirmada?</p>
@@ -260,24 +398,25 @@ const App = () => {
                 </div>
               )}
 
-              {/* Lógica de Day Use */}
               {formData.participationType === 'dayuse' && (
                 <div className="space-y-4 animate-in slide-in-from-top-2">
                   <p className="text-sm font-bold text-gray-700">Quais dias virá? (Para o Prasadam)</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {[
-                      { id: 'day31', label: '31 Dez', sub: 'Quarta (Virada)' },
-                      { id: 'day01', label: '01 Jan', sub: 'Quinta' },
-                      { id: 'day02', label: '02 Jan', sub: 'Sexta' }
+                      { id: 'day30', label: '30 Dez', sub: 'Segunda' },
+                      { id: 'day31', label: '31 Dez', sub: 'Terça' },
+                      { id: 'day01', label: '01 Jan', sub: 'Quarta' },
+                      { id: 'day02', label: '02 Jan', sub: 'Quinta' },
+                      { id: 'day03', label: '03 Jan', sub: 'Sexta' }
                     ].map((d) => (
                       <button
                         key={d.id}
                         type="button"
                         onClick={() => handleDayChange(d.id as keyof ParticipationDays)}
-                        className={`p-3 rounded-xl border-2 text-center transition-all ${formData.days[d.id as keyof ParticipationDays] ? 'border-amber-500 bg-amber-50 font-bold text-amber-900' : 'border-gray-100 bg-gray-50 text-gray-500'}`}
+                        className={`p-2 rounded-xl border-2 text-center transition-all ${formData.days[d.id as keyof ParticipationDays] ? 'border-amber-500 bg-amber-50 font-bold text-amber-900 shadow-sm' : 'border-gray-100 bg-gray-50 text-gray-500'}`}
                       >
-                        {d.label}
-                        <p className="text-[10px] opacity-60 font-normal">{d.sub}</p>
+                        <span className="text-xs sm:text-sm">{d.label}</span>
+                        <p className="text-[9px] opacity-60 font-normal">{d.sub}</p>
                       </button>
                     ))}
                   </div>
@@ -330,19 +469,24 @@ const App = () => {
         </form>
       </div>
 
-      {/* Footer Original */}
-      <footer className="text-center mt-12 text-amber-800/60 text-sm space-y-3">
-        <p>Hare Krishna • {EVENT_INFO.location} 2025</p>
-        <div className="flex justify-center gap-6">
-          <button onClick={() => setView('login')} className="flex items-center gap-1 hover:text-amber-800 transition">
-            <Lock size={12} /> Acesso Admin
+      <footer className="text-center mt-12 text-amber-800/60 text-sm space-y-4 px-4 pb-8">
+        <p className="font-medium tracking-wide">Hare Krishna • Palhoça, SC 2025</p>
+        <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-3">
+          <button 
+            onClick={() => setShowPixModal(true)} 
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-100/50 hover:bg-emerald-100 text-emerald-700 rounded-full transition-all group font-bold"
+          >
+            <Heart size={14} className="group-hover:scale-125 transition-transform" fill="currentColor" />
+            Apoiar o Evento
           </button>
           <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition">
             <Phone size={12} /> Suporte
           </a>
+          <button onClick={() => setView('login')} className="flex items-center gap-1 hover:text-amber-800 transition">
+            <Lock size={12} /> Painel Admin
+          </button>
         </div>
       </footer>
-
       <AiAssistant />
     </div>
   );
