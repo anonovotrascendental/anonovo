@@ -71,11 +71,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const stats = useMemo(() => {
     return {
       total: data.length,
-      day30: data.filter(r => (r.selectedDays || '').includes('30/Dez')).length,
       day31: data.filter(r => (r.selectedDays || '').includes('31/Dez')).length,
       day01: data.filter(r => (r.selectedDays || '').includes('01/Jan')).length,
       day02: data.filter(r => (r.selectedDays || '').includes('02/Jan')).length,
-      day03: data.filter(r => (r.selectedDays || '').includes('03/Jan')).length,
       hosting: data.filter(r => r.participationType === 'hosting').length,
       hostingPaid: data.filter(r => r.participationType === 'hosting' && r.hostingStatus === 'paid').length,
       hostingPending: data.filter(r => r.participationType === 'hosting' && r.hostingStatus === 'reserving').length,
@@ -90,11 +88,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   );
 
   const chartData = [
-    { name: '30/Dez', count: stats.day30, color: '#f59e0b' },
     { name: '31/Dez', count: stats.day31, color: '#f97316' },
     { name: '01/Jan', count: stats.day01, color: '#3b82f6' },
     { name: '02/Jan', count: stats.day02, color: '#10b981' },
-    { name: '03/Jan', count: stats.day03, color: '#06b6d4' },
     { name: 'Hosped.', count: stats.hosting, color: '#8b5cf6' },
   ];
 

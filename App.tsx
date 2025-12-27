@@ -56,7 +56,7 @@ const App = () => {
     phone: '',
     bloodType: '',
     restrictions: '',
-    days: { day30: false, day31: false, day01: false, day02: false, day03: false }
+    days: { day31: false, day01: false, day02: false }
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -107,11 +107,9 @@ const App = () => {
     if (formData.participationType === 'hosting') {
       selectedDaysList.push("Hospedagem (Pacote 5 dias)");
     } else {
-      if (formData.days.day30) selectedDaysList.push("30/Dez");
       if (formData.days.day31) selectedDaysList.push("31/Dez (Virada)");
       if (formData.days.day01) selectedDaysList.push("01/Jan");
       if (formData.days.day02) selectedDaysList.push("02/Jan");
-      if (formData.days.day03) selectedDaysList.push("03/Jan");
     }
 
     const payload = { 
@@ -121,28 +119,19 @@ const App = () => {
     };
 
     try {
-      // Chamada assíncrona para a IA
       const guidancePromise = getSpiritualGuidance(
         formData.spiritualName || formData.civilName.split(' ')[0], 
         `Tipo de participação: ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}.`
       );
 
-      // Tentativa de envio para o Google Sheets com melhor tratamento de erro
-      let sheetSuccess = false;
       if (GOOGLE_SCRIPT_URL) {
         try {
-          // Usando fetch padrão sem no-cors para permitir JSON, ou lidando com as limitações do GAS
           await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(payload),
-            // Nota: GAS redireciona, o fetch segue por padrão. 
-            // 'no-cors' impede a leitura do corpo mas evita erros de preflight se o servidor não suportar.
-            // Aqui optamos por deixar o navegador gerenciar, já que GAS suporta redirecionamentos.
           });
-          sheetSuccess = true;
         } catch (error) {
           console.error("Erro ao enviar para Google Sheets:", error);
-          // Não bloqueamos o sucesso total pois o WhatsApp é o canal oficial
         }
       }
 
@@ -401,13 +390,11 @@ const App = () => {
               {formData.participationType === 'dayuse' && (
                 <div className="space-y-4 animate-in slide-in-from-top-2">
                   <p className="text-sm font-bold text-gray-700">Quais dias virá? (Para o Prasadam)</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
-                      { id: 'day30', label: '30 Dez', sub: 'Segunda' },
                       { id: 'day31', label: '31 Dez', sub: 'Terça' },
                       { id: 'day01', label: '01 Jan', sub: 'Quarta' },
-                      { id: 'day02', label: '02 Jan', sub: 'Quinta' },
-                      { id: 'day03', label: '03 Jan', sub: 'Sexta' }
+                      { id: 'day02', label: '02 Jan', sub: 'Quinta' }
                     ].map((d) => (
                       <button
                         key={d.id}
