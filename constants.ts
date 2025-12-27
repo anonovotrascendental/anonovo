@@ -1,5 +1,5 @@
 
-export const GOOGLE_SCRIPT_URL = ""; // User provides this
+export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoR_cvW3Yiona7JsaaAbA4T8nrZNSIBVhWOEMWoUrhIUAE3w3675hObkuCnLke67KT/exec"; // User provides this
 export const ADMIN_PASSWORD = "2705";
 export const ORGANIZER_PHONE = "554896597389";
 
@@ -23,7 +23,7 @@ export const ACCOMMODATION_CONFIG = {
 
 export const PIX_CONFIG = {
   enabled: true,
-  key: "554896597389",
+  key: "kirtanocantodaalma@gmail.com",
   receiver: "Organização Ano Novo Transcendental",
   description: "Apoio voluntário para o Prasadam e logística do evento."
 };
