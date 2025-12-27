@@ -4,12 +4,16 @@ export const ADMIN_PASSWORD = "2705";
 export const ORGANIZER_PHONE = "554896597389";
 
 export const EVENT_INFO = {
-  title: "Réveillon Transcendental",
-  location: "Palhoça, SC",
+  title: "Festival de Ano Novo 2025/26",
+  location: "Enseada do Brito, Palhoça - SC",
+  address: "Rua Nossa Senhora do Rosário, s/n",
   venue: "Rancho Serra Mar",
-  guest: "Srila Gurudeva",
-  dates: "30/12 - 03/01",
-  description: "Celebração espiritual de ano novo com mantras, ensinamentos védicos e prasadam sagrado.",
+  guest: "Sri Srimad Bhaktivedanta Vana Goswami Maharaja",
+  dates: "31/12 a 02/01",
+  fullDates: "30/12 a 03/01",
+  startTime: "18:00",
+  activities: ["Mantras", "Palestras", "Jantar Veg", "Dança Indiana"],
+  description: "Festival espiritual de Ano Novo com Sri Srimad Bhaktivedanta Vana Goswami Maharaja, apresentando mantras, palestras, jantar vegetariano e dança indiana."
 };
 
 export const ACCOMMODATION_CONFIG = {

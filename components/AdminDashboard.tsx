@@ -50,15 +50,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(GOOGLE_SCRIPT_URL);
+      // Added cache-buster timestamp to ensure fresh data and potentially help with some fetch issues
+      const separator = GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?';
+      const urlWithCacheBuster = `${GOOGLE_SCRIPT_URL}${separator}t=${new Date().getTime()}`;
+      
+      const response = await fetch(urlWithCacheBuster, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
       if (!response.ok) {
-        throw new Error(`Servidor respondeu com status ${response.status}`);
+        throw new Error(`Servidor respondeu com status ${response.status}. Verifique se o script está publicado como "Qualquer pessoa".`);
       }
+      
       const json = await response.json();
       setData(Array.isArray(json) ? json : []);
     } catch (err: any) {
-      console.error("Fetch error:", err);
-      setError("Não foi possível carregar os dados. Verifique a conexão ou as permissões do script.");
+      console.error("Fetch error detail:", err);
+      setError(`Erro de conexão: ${err.message || "Falha ao carregar dados"}. Certifique-se de que a URL do Script está correta e as permissões de CORS do Google não estão bloqueando o acesso.`);
     } finally {
       setLoading(false);
     }
@@ -155,9 +166,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-red-700 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle size={20} />
-            <span className="text-sm font-medium">{error}</span>
+          <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-red-700 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 shadow-sm">
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="text-sm font-bold">Erro de Carregamento</span>
+              <p className="text-xs opacity-80">{error}</p>
+            </div>
           </div>
         )}
 

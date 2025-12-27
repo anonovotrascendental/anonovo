@@ -2,12 +2,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { EVENT_INFO } from "../constants";
 
+// Helper to get spiritual guidance from AI
 export const getSpiritualGuidance = async (userName: string, context: string = ""): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
+  // Check if API key is present
+  if (!process.env.API_KEY) return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Initialize with direct process.env.API_KEY in a named parameter as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `You are a spiritual assistant for the event "${EVENT_INFO.title}" featuring ${EVENT_INFO.guest}. 
@@ -19,6 +21,7 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
         topP: 0.9,
       }
     });
+    // The .text property directly returns the string output as per guidelines
     return response.text ?? "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
   } catch (error) {
     console.error("Gemini Spiritual Guidance Error:", error);
@@ -26,12 +29,14 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
   }
 };
 
+// Helper to ask AI about event details
 export const askAiAboutEvent = async (question: string): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "Desculpe, o assistente está temporariamente indisponível.";
+  // Check if API key is present
+  if (!process.env.API_KEY) return "Desculpe, o assistente está temporariamente indisponível.";
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Initialize with direct process.env.API_KEY in a named parameter as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Informação do Evento:
@@ -49,6 +54,7 @@ export const askAiAboutEvent = async (question: string): Promise<string> => {
         temperature: 0.5,
       }
     });
+    // The .text property directly returns the string output as per guidelines
     return response.text ?? "Desculpe, não consegui processar sua pergunta agora. Por favor, entre em contato com os organizadores.";
   } catch (error) {
     console.error("Gemini Ask AI Error:", error);
