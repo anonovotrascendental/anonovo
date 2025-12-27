@@ -1,11 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { EVENT_INFO } from "../constants";
 
-// The GoogleGenAI instance should be created right before use to ensure it utilizes the 
-// most up-to-date API key from the environment/dialog as per guidelines.
-
-export const getSpiritualGuidance = async (userName: string, context: string = "") => {
-  // Always initialize right before making an API call to ensure current process.env.API_KEY is used.
+export const getSpiritualGuidance = async (userName: string, context: string = ""): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
@@ -20,16 +16,14 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
         topP: 0.9,
       }
     });
-    // Access the .text property directly (not a method) from the response object.
-    return response.text;
+    return response.text ?? "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
   } catch (error) {
     console.error("Gemini Error:", error);
     return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
   }
 };
 
-export const askAiAboutEvent = async (question: string) => {
-  // Always initialize right before making an API call to ensure current process.env.API_KEY is used.
+export const askAiAboutEvent = async (question: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
@@ -50,8 +44,7 @@ export const askAiAboutEvent = async (question: string) => {
         temperature: 0.5,
       }
     });
-    // Access the .text property directly (not a method) from the response object.
-    return response.text;
+    return response.text ?? "Desculpe, não consegui processar sua pergunta agora. Por favor, entre em contato com os organizadores.";
   } catch (error) {
     return "Desculpe, não consegui processar sua pergunta agora. Por favor, entre em contato com os organizadores.";
   }

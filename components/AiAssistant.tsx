@@ -1,14 +1,18 @@
-
 import React, { useState } from 'react';
 import { Sparkles, MessageSquare, Send, X } from 'lucide-react';
 import { askAiAboutEvent } from '../services/geminiService';
 import { Button } from './Button';
 
+interface Message {
+  role: 'user' | 'ai';
+  text: string;
+}
+
 export const AiAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
-  const [chat, setChat] = useState<{role: 'user' | 'ai', text: string}[]>([]);
+  const [chat, setChat] = useState<Message[]>([]);
 
   const handleSend = async () => {
     if (!question.trim()) return;
@@ -17,9 +21,14 @@ export const AiAssistant: React.FC = () => {
     setChat(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
     
-    const response = await askAiAboutEvent(userMsg);
-    setChat(prev => [...prev, { role: 'ai', text: response }]);
-    setLoading(false);
+    try {
+      const response = await askAiAboutEvent(userMsg);
+      setChat(prev => [...prev, { role: 'ai', text: response }]);
+    } catch (error) {
+      setChat(prev => [...prev, { role: 'ai', text: "Erro na conexão com o assistente." }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
