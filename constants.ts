@@ -33,3 +33,12 @@ export const PIX_CONFIG = {
 };
 
 export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Não sei'];
+
+export const TRANSPORT_OPTIONS = [
+  'Carro Próprio',
+  'Carro Alugado',
+  'Ônibus/Van de Devotos',
+  'Carona',
+  'Ônibus Rodoviário / Avião',
+  'Outro'
+];

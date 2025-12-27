@@ -18,12 +18,13 @@ import {
   Heart,
   Sparkles,
   Quote,
-  CircleCheckBig,
   UtensilsCrossed,
   Sparkle,
-  ExternalLink,
-  Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Car,
+  Users2,
+  Wallet,
+  HandHeart
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -33,7 +34,8 @@ import {
   GOOGLE_SCRIPT_URL,
   BLOOD_TYPES,
   ACCOMMODATION_CONFIG,
-  PIX_CONFIG
+  PIX_CONFIG,
+  TRANSPORT_OPTIONS
 } from './constants';
 import { Input, Textarea } from './components/Input';
 import { Button } from './components/Button';
@@ -60,7 +62,9 @@ const App = () => {
     phone: '',
     bloodType: '',
     restrictions: '',
-    days: { day31: false, day01: false, day02: false }
+    days: { day31: false, day01: false, day02: false },
+    transportationMethod: '',
+    groupSize: 1
   });
 
   const getWhatsAppLink = () => {
@@ -79,10 +83,10 @@ const App = () => {
       `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago ✅' : formData.hostingStatus === 'reserving' ? 'Vou reservar ⏳' : 'N/A'}\n` +
       `*Inscrito:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
       `*WhatsApp:* ${formData.phone}\n` +
-      `*RG:* ${formData.rg}\n` +
+      `*Transporte:* ${formData.transportationMethod}\n` +
+      `*Grupo:* ${formData.groupSize} pessoa(s)\n` +
       `*Dias:* ${selectedDaysList.join(', ')}\n` +
-      `*Tipo Sanguíneo:* ${formData.bloodType || 'Não informado'}\n` +
-      `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
+      `*Saúde:* Sangue ${formData.bloodType || '?'}, Restr: ${formData.restrictions || 'Nenhuma'}\n\n` +
       `_Estou enviando esta mensagem para VALIDAR meu cadastro oficial._`;
 
     return `https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`;
@@ -101,8 +105,9 @@ const App = () => {
   }, [view, countdown]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const val = type === 'number' ? parseInt(value) || 0 : value;
+    setFormData(prev => ({ ...prev, [name]: val }));
   };
 
   const handleDayChange = (day: keyof ParticipationDays) => {
@@ -142,6 +147,11 @@ const App = () => {
       return;
     }
 
+    if (!formData.transportationMethod) {
+      alert("Por favor, selecione seu meio de transporte.");
+      return;
+    }
+
     setLoading(true);
 
     const selectedDaysList: string[] = [];
@@ -153,8 +163,18 @@ const App = () => {
       if (formData.days.day02) selectedDaysList.push("02/Jan");
     }
 
+    // Explicit payload to match GAS expectations
     const payload = { 
-      ...formData, 
+      civilName: formData.civilName,
+      spiritualName: formData.spiritualName,
+      participationType: formData.participationType,
+      hostingStatus: formData.hostingStatus,
+      rg: formData.rg,
+      phone: formData.phone,
+      bloodType: formData.bloodType,
+      restrictions: formData.restrictions,
+      transportationMethod: formData.transportationMethod,
+      groupSize: formData.groupSize,
       selectedDays: selectedDaysList.join(', '),
       timestamp: new Date().toLocaleString('pt-BR')
     };
@@ -166,16 +186,12 @@ const App = () => {
       );
 
       if (GOOGLE_SCRIPT_URL) {
-        try {
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload),
-          });
-        } catch (error) {
-          console.error("Sheet Sync Error:", error);
-        }
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors', // standard way to bypass CORS for GAS
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
       }
 
       const guidance = await guidancePromise;
@@ -183,36 +199,58 @@ const App = () => {
       setCountdown(7); 
       setView('success');
     } catch (error) {
-      alert("Erro ao processar sua inscrição. Tente novamente.");
+      console.error("Submission error:", error);
+      alert("Erro ao processar sua inscrição. Verifique sua internet.");
     } finally {
       setLoading(false);
     }
   };
 
-  const PixSection = ({ className = "" }: { className?: string }) => (
-    <div className={`bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center space-y-4 ${className}`}>
+  const PixSection = ({ className = "", title = "Dados para Pagamento", subtitle = "Use a chave abaixo para realizar sua reserva ou contribuição via PIX." }: { className?: string, title?: string, subtitle?: string }) => (
+    <div className={`bg-emerald-50 border border-emerald-100 rounded-3xl p-6 text-center space-y-4 ${className}`}>
       <div className="flex justify-center">
-        <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 shadow-inner">
-          <Heart size={24} fill="currentColor" className="animate-pulse" />
+        <div className="bg-emerald-100 p-4 rounded-2xl text-emerald-600 shadow-inner">
+          <Wallet size={32} className="animate-pulse" />
         </div>
       </div>
       <div>
-        <h4 className="font-bold text-emerald-900">Contribuição Voluntária</h4>
-        <p className="text-xs text-emerald-700/70 mt-1 leading-tight">{PIX_CONFIG.description}</p>
+        <h4 className="font-black text-emerald-900 text-lg uppercase tracking-tight">{title}</h4>
+        <p className="text-xs text-emerald-700/70 mt-1 leading-tight font-medium">{subtitle}</p>
       </div>
-      <div className="bg-white p-4 rounded-xl shadow-inner border border-emerald-50 space-y-3">
-        <div className="flex items-center justify-between gap-3 text-left">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Chave PIX</p>
-            <p className="text-sm font-mono text-slate-700 truncate font-bold">{PIX_CONFIG.key}</p>
+      
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-emerald-50 space-y-4">
+        <div className="space-y-3 text-left">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Chave PIX (E-mail)</p>
+            <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <p className="text-sm font-mono text-slate-700 truncate font-bold">{PIX_CONFIG.key}</p>
+              <button 
+                type="button" 
+                onClick={() => copyText(PIX_CONFIG.key)}
+                className="shrink-0 p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200 transition-colors ml-2"
+              >
+                {copied ? <Check size={18}/> : <Copy size={18}/>}
+              </button>
+            </div>
           </div>
-          <button 
-            type="button" 
-            onClick={() => copyText(PIX_CONFIG.key)}
-            className="shrink-0 p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
-          >
-            {copied ? <Check size={18}/> : <Copy size={18}/>}
-          </button>
+
+          <div className="grid grid-cols-1 gap-2 border-t border-slate-50 pt-3">
+             <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Favorecido / Recebedor</span>
+                <span className="text-xs font-bold text-slate-700">{ACCOMMODATION_CONFIG.pixName}</span>
+                <span className="text-[9px] text-slate-400 font-medium">{PIX_CONFIG.receiver}</span>
+             </div>
+             <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Banco</span>
+                  <span className="text-xs font-bold text-slate-700">{ACCOMMODATION_CONFIG.pixBank}</span>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Valor (Hospedagem)</span>
+                  <span className="text-xs font-bold text-emerald-600">R$ {ACCOMMODATION_CONFIG.price.toFixed(2)}</span>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
     </div>
@@ -220,7 +258,7 @@ const App = () => {
 
   if (view === 'login') return (
     <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center border-b-4 border-amber-500">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-sm text-center border-b-4 border-amber-500">
         <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
           <Lock size={32} />
         </div>
@@ -242,9 +280,8 @@ const App = () => {
   if (view === 'admin') return <AdminDashboard onBack={() => setView('form')} />;
 
   if (view === 'success') return (
-    <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0a3055] py-8 flex items-center justify-center p-4">
       <div className="bg-white p-8 md:p-10 rounded-[45px] shadow-2xl max-w-lg w-full text-center border-t-[14px] border-[#ec4899] space-y-6 animate-in zoom-in-95 duration-500">
-        
         <div className="relative inline-block">
           <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-inner">
             <ShieldCheck size={56} className="animate-bounce" />
@@ -253,12 +290,10 @@ const App = () => {
             <Sparkles size={16} />
           </div>
         </div>
-
         <div>
           <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight leading-none">Dados Recebidos!</h2>
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest bg-slate-100 py-1 px-4 rounded-full inline-block">Falta apenas 1 etapa</p>
         </div>
-        
         {spiritualMessage && (
           <div className="bg-blue-50/50 p-6 rounded-[35px] border border-blue-100 text-[#0a3055] text-sm relative italic font-medium leading-relaxed shadow-sm">
             <Quote className="absolute -top-3 -left-3 text-blue-200" size={32} />
@@ -266,19 +301,13 @@ const App = () => {
             <div className="mt-2 text-[10px] uppercase tracking-widest text-blue-400 font-bold not-italic">Sua Benção de Ano Novo</div>
           </div>
         )}
-
         <div className="bg-emerald-50 p-8 rounded-[40px] border-2 border-emerald-100 space-y-5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-             <Phone size={80} />
-          </div>
-          
           <div className="flex flex-col items-center gap-2">
             <h3 className="font-black text-emerald-800 uppercase text-lg tracking-tighter">Validação Obrigatória</h3>
             <p className="text-emerald-700/60 text-xs font-medium max-w-[240px] mx-auto">
               Para oficializar sua presença e garantir seu Prasadam, envie seus dados para nossa equipe agora.
             </p>
           </div>
-
           <div className="space-y-4">
             <Button 
               onClick={() => window.location.href = getWhatsAppLink()} 
@@ -289,7 +318,6 @@ const App = () => {
                 VALIDAR NO WHATSAPP
               </div>
             </Button>
-            
             <div className="flex items-center justify-center gap-3">
               <div className="h-1 flex-1 bg-emerald-200 rounded-full overflow-hidden">
                 <div 
@@ -297,12 +325,16 @@ const App = () => {
                   style={{ width: `${((7 - countdown) / 7) * 100}%` }}
                 />
               </div>
-              <span className="text-[10px] font-black text-emerald-600 uppercase tabular-nums">Validação automática em {countdown}s</span>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tabular-nums">Envio automático em {countdown}s</span>
             </div>
           </div>
         </div>
 
-        <PixSection className="scale-95 opacity-80 hover:opacity-100 transition-opacity" />
+        <PixSection 
+          title="Contribuição Voluntária" 
+          subtitle="Sua doação ajuda no Prasadam e logística do festival. Agradecemos imensamente seu apoio!"
+          className="scale-95 opacity-90 hover:opacity-100 transition-opacity"
+        />
 
         <div className="pt-2">
           <button 
@@ -321,21 +353,15 @@ const App = () => {
       <div className="max-w-2xl w-full bg-white shadow-2xl overflow-hidden min-h-screen flex flex-col">
         
         <div className="bg-[#0a3055] p-8 md:p-12 text-center relative overflow-hidden border-b-8 border-[#ec4899]">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-400/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl"></div>
-          
           <h2 className="text-white text-lg md:text-xl font-bold tracking-widest uppercase mb-4 opacity-90 drop-shadow">
             {EVENT_INFO.title}
           </h2>
-          
           <div className="mb-2">
             <span className="text-blue-200 text-xs uppercase tracking-[0.2em]">Com a presença ilustre de</span>
           </div>
-          
           <h1 className="text-3xl md:text-5xl font-extrabold mb-6 text-[#facc15] font-serif leading-tight drop-shadow-lg">
             {EVENT_INFO.guest}
           </h1>
-
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {EVENT_INFO.activities.map(act => (
               <span key={act} className="px-3 py-1 bg-white/10 rounded-full text-white text-[10px] uppercase font-bold border border-white/20 backdrop-blur-sm">
@@ -343,15 +369,10 @@ const App = () => {
               </span>
             ))}
           </div>
-
           <div className="flex flex-col items-center gap-2 text-white">
             <div className="flex items-center gap-2 bg-[#ec4899] px-6 py-2 rounded-full font-black text-lg shadow-xl">
               <Calendar size={20} />
               {EVENT_INFO.dates} a partir das {EVENT_INFO.startTime}h
-            </div>
-            <div className="flex items-center gap-2 text-blue-100 text-sm mt-2">
-              <MapPin size={16} className="text-[#ec4899]" />
-              <span className="font-medium">{EVENT_INFO.address}</span>
             </div>
           </div>
         </div>
@@ -426,7 +447,16 @@ const App = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'paid' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'paid' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Já Paguei</button>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'reserving' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Vou Pagar</button>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }));
+                        setShowPixModal(true);
+                      }} 
+                      className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'reserving' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}
+                    >
+                      Vou Pagar
+                    </button>
                   </div>
                 </div>
               )}
@@ -451,7 +481,6 @@ const App = () => {
                       >
                         <span className={`text-base font-black ${formData.days[d.id as keyof ParticipationDays] ? 'text-blue-900' : ''}`}>{d.label}</span>
                         <p className="text-[10px] opacity-70 uppercase font-bold tracking-tight">{d.sub}</p>
-                        {formData.days[d.id as keyof ParticipationDays] && <Sparkle size={12} className="text-blue-500 mt-1 animate-spin-slow" />}
                       </button>
                     ))}
                   </div>
@@ -460,25 +489,51 @@ const App = () => {
             </div>
           ) : (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 space-y-6 shadow-inner">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Input required name="civilName" label="Nome Completo *" value={formData.civilName} onChange={handleInputChange} placeholder="Como no documento" icon={<User size={14}/>} />
-                  <Input name="spiritualName" label="Nome Espiritual" value={formData.spiritualName} onChange={handleInputChange} placeholder="Ex: Sri Krishna Das" icon={<Sparkles size={14}/>} />
-                  <Input required name="rg" label="RG / Documento *" value={formData.rg} onChange={handleInputChange} placeholder="Para identificação" icon={<Lock size={14}/>} />
-                  <Input required type="tel" name="phone" label="WhatsApp *" value={formData.phone} onChange={handleInputChange} placeholder="(DDD) 9...." icon={<Phone size={14}/>} />
-                </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-sm font-black text-slate-700 uppercase tracking-tighter flex items-center gap-2">
-                      <Heart size={14} className="text-red-400" /> Tipo Sanguíneo
-                    </label>
-                    <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700">
-                      <option value="">Selecione...</option>
-                      {BLOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+              <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 space-y-8 shadow-inner">
+                {/* Perfil & Saúde */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                    <User size={14} className="text-[#ec4899]" /> Identificação & Saúde
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Input required name="civilName" label="Nome Completo *" value={formData.civilName} onChange={handleInputChange} placeholder="Como no documento" icon={<User size={14}/>} />
+                    <Input name="spiritualName" label="Nome Espiritual" value={formData.spiritualName} onChange={handleInputChange} placeholder="Ex: Sri Krishna Das" icon={<Sparkles size={14}/>} />
+                    <Input required name="rg" label="RG / Documento *" value={formData.rg} onChange={handleInputChange} placeholder="Para identificação" icon={<Lock size={14}/>} />
+                    <Input required type="tel" name="phone" label="WhatsApp *" value={formData.phone} onChange={handleInputChange} placeholder="(DDD) 9...." icon={<Phone size={14}/>} />
                   </div>
-                  <div className="md:col-span-2">
-                    <Textarea name="restrictions" label="Restrições Alimentares / Saúde" value={formData.restrictions} onChange={handleInputChange} placeholder="Alergias, Vegano, Medicamentos..." icon={<UtensilsCrossed size={14}/>} />
+                  
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-sm font-black text-slate-700 uppercase tracking-tighter flex items-center gap-2">
+                        <Heart size={14} className="text-red-400" /> Tipo Sanguíneo
+                      </label>
+                      <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700">
+                        <option value="">Selecione...</option>
+                        {BLOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Textarea name="restrictions" label="Restrições Alimentares / Saúde" value={formData.restrictions} onChange={handleInputChange} placeholder="Alergias, Vegano, Medicamentos..." icon={<UtensilsCrossed size={14}/>} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logística de Transporte */}
+                <div className="space-y-4 pt-4 border-t border-slate-200">
+                  <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                    <Car size={14} className="text-[#ec4899]" /> Transporte
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-sm font-black text-slate-700 uppercase tracking-tighter flex items-center gap-2">
+                        <Car size={14} className="text-blue-500" /> Como você virá? *
+                      </label>
+                      <select name="transportationMethod" required value={formData.transportationMethod} onChange={handleInputChange} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700">
+                        <option value="">Selecione o transporte...</option>
+                        {TRANSPORT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                    <Input required type="number" name="groupSize" label="Total de pessoas no grupo *" value={formData.groupSize} onChange={handleInputChange} min="1" icon={<Users2 size={14}/>} />
                   </div>
                 </div>
               </div>
@@ -513,21 +568,28 @@ const App = () => {
 
         <div className="bg-[#ec4899] p-10 text-center text-white relative">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-left">
-              <p className="text-[11px] uppercase font-black tracking-[0.2em] opacity-80 mb-2">Suporte & Informações</p>
-              <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-xl font-black hover:text-yellow-200 transition group">
-                <div className="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
-                  <Phone size={20}/>
-                </div>
-                {ORGANIZER_PHONE.replace('55', '')} (Amrtananda das)
-              </a>
-            </div>
-            
-            <div className="flex gap-4">
-              <button onClick={() => setShowPixModal(true)} className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl transition-all border border-white/20 flex items-center gap-2 text-sm font-black shadow-lg">
-                <Heart size={18} fill="currentColor" /> Apoiar Festival
+            <div className="text-left space-y-4">
+              <div>
+                <p className="text-[11px] uppercase font-black tracking-[0.2em] opacity-80 mb-2">Suporte & Informações</p>
+                <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-xl font-black hover:text-yellow-200 transition group">
+                  <div className="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
+                    <Phone size={20}/>
+                  </div>
+                  {ORGANIZER_PHONE.replace('55', '')} (Amrtananda das)
+                </a>
+              </div>
+              <button 
+                onClick={() => setShowPixModal(true)} 
+                className="flex items-center gap-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity hover:underline"
+              >
+                <HandHeart size={14} /> Apoiar o Festival via PIX
               </button>
-              <button onClick={() => setView('login')} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10">
+            </div>
+            <div className="flex gap-4">
+               <button onClick={() => setShowPixModal(true)} title="Doação PIX" className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10">
+                <Wallet size={20} />
+              </button>
+              <button onClick={() => setView('login')} title="Admin" className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10">
                 <Lock size={20} />
               </button>
             </div>
@@ -537,15 +599,15 @@ const App = () => {
 
       {showPixModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[50px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-t-8 border-[#ec4899]">
-            <div className="p-6 pb-0 flex justify-end">
+          <div className="bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-t-8 border-emerald-500">
+            <div className="p-6 pb-2 flex justify-end">
               <button onClick={() => setShowPixModal(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-600 transition-colors">
                 <X size={24} />
               </button>
             </div>
-            <div className="px-10 pb-12">
+            <div className="px-8 pb-10">
               <PixSection />
-              <Button onClick={() => setShowPixModal(false)} className="w-full mt-8 py-4 rounded-2xl" variant="primary">Fechar Janela</Button>
+              <Button onClick={() => setShowPixModal(false)} className="w-full mt-6 py-4 rounded-2xl" variant="success">Entendi, Fechar</Button>
             </div>
           </div>
         </div>

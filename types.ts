@@ -18,6 +18,8 @@ export interface RegistrationFormData {
   bloodType: string;
   restrictions: string;
   days: ParticipationDays;
+  transportationMethod: string;
+  groupSize: number;
 }
 
 export interface RegistrationRecord extends RegistrationFormData {
@@ -34,4 +36,5 @@ export interface AdminStats {
   day02: number;
   hosting: number;
   restrictions: number;
+  totalVehiclesEstimate: number;
 }
