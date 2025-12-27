@@ -1,8 +1,12 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { EVENT_INFO } from "../constants";
 
 export const getSpiritualGuidance = async (userName: string, context: string = ""): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return "Que seu Ano Novo seja repleto de paz, devoção e alegrias transcendentais! Hare Krishna!";
+
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({
@@ -24,7 +28,10 @@ export const getSpiritualGuidance = async (userName: string, context: string = "
 };
 
 export const askAiAboutEvent = async (question: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return "Desculpe, o assistente está temporariamente indisponível.";
+
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const response = await ai.models.generateContent({
