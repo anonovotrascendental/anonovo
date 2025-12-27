@@ -1,12 +1,12 @@
 
-export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoR_cvW3Yiona7JsaaAbA4T8nrZNSIBVhWOEMWoUrhIUAE3w3675hObkuCnLke67KT/exec";
+export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwqlggsGnNXaKLPwZhMBGNZLYAOJe-DKNbiCv-1Kb7o-eI2MPEHGEKRIIpjm17i39KRQ/exec";
 export const ADMIN_PASSWORD = "2705";
 export const ORGANIZER_PHONE = "554896597389";
 
 export const EVENT_INFO = {
   title: "Festival de Ano Novo 2025/26",
   location: "Enseada do Brito, Palhoça - SC",
-  address: "Rua Nossa Senhora do Rosário, s/n",
+  address: "Rua Nossa Senhora do Rosário, s/n, Enseada do Brito, Palhoça - SC, 88138-800",
   venue: "Rancho Serra Mar",
   guest: "Sri Srimad Bhaktivedanta Vana Goswami Maharaja",
   dates: "31/12 a 02/01",

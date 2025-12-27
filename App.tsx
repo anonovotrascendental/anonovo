@@ -19,9 +19,10 @@ import {
   Heart,
   Sparkles,
   Quote,
+  CircleCheckBig,
   Music,
   UtensilsCrossed,
-  BookOpen
+  Sparkle
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -122,7 +123,7 @@ const App = () => {
     try {
       const guidancePromise = getSpiritualGuidance(
         formData.spiritualName || formData.civilName.split(' ')[0], 
-        `Evento com ${EVENT_INFO.guest}. Tipo: ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}.`
+        `Evento: ${EVENT_INFO.title}. Mestre: ${EVENT_INFO.guest}.`
       );
 
       if (GOOGLE_SCRIPT_URL) {
@@ -145,7 +146,7 @@ const App = () => {
         `*Mestre:* ${EVENT_INFO.guest}\n` +
         `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}\n` +
         `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago' : formData.hostingStatus === 'reserving' ? 'Vou reservar' : 'N/A'}\n` +
-        `*Nome:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
+        `*Inscrito:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
         `*Dias:* ${payload.selectedDays}\n` +
         `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
         `_Enviado pelo App Oficial do Festival_`;
@@ -153,7 +154,7 @@ const App = () => {
       window.open(`https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
       setView('success');
     } catch (error) {
-      alert("Erro ao processar. Verifique sua conexão.");
+      alert("Erro ao processar sua inscrição. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -179,7 +180,7 @@ const App = () => {
           <button 
             type="button" 
             onClick={() => copyText(PIX_CONFIG.key)}
-            className="shrink-0 p-2 bg-emerald-50 text-emerald-600 rounded-lg"
+            className="shrink-0 p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
           >
             {copied ? <Check size={18}/> : <Copy size={18}/>}
           </button>
@@ -192,20 +193,22 @@ const App = () => {
   );
 
   if (view === 'login') return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
-        <Lock size={32} className="mx-auto mb-4 text-blue-600" />
-        <h2 className="text-xl font-bold mb-4 font-serif">Acesso Administrativo</h2>
+    <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center">
+        <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
+          <Lock size={32} />
+        </div>
+        <h2 className="text-xl font-bold mb-6 font-serif text-[#0a3055]">Painel de Gestão</h2>
         <form onSubmit={(e) => {
           e.preventDefault();
           const p = (e.currentTarget.elements.namedItem('pass') as HTMLInputElement).value;
           if (p === ADMIN_PASSWORD) setView('admin');
           else alert('Senha incorreta');
         }}>
-          <input name="pass" type="password" placeholder="Senha" className="w-full border p-3 rounded-xl mb-4 text-center" required autoFocus />
-          <Button className="w-full" variant="secondary">Entrar</Button>
+          <input name="pass" type="password" placeholder="Senha Administrativa" className="w-full border-2 border-slate-100 p-4 rounded-xl mb-4 text-center focus:border-blue-500 outline-none transition-all" required autoFocus />
+          <Button className="w-full py-4 text-lg" variant="secondary">Entrar no Painel</Button>
         </form>
-        <button onClick={() => setView('form')} className="mt-4 text-gray-400 text-sm hover:underline">Voltar</button>
+        <button onClick={() => setView('form')} className="mt-6 text-slate-400 text-sm hover:underline">Voltar para o formulário</button>
       </div>
     </div>
   );
@@ -214,37 +217,38 @@ const App = () => {
 
   if (view === 'success') return (
     <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border-t-[10px] border-pink-500 space-y-6">
-        <div className="bg-green-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
-          <CheckCircle size={48} />
+      <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-md w-full text-center border-t-[12px] border-[#ec4899] space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-inner">
+          <CircleCheckBig size={56} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 font-serif">Inscrição Iniciada!</h2>
-        <p className="text-slate-500 text-sm italic">"O sucesso espiritual começa com o primeiro passo de rendição."</p>
+        <div>
+          <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight">Inscrição Iniciada!</h2>
+          <p className="text-slate-500 text-sm italic font-medium">"O sucesso espiritual é garantido por Sri Guru e Gauranga."</p>
+        </div>
         
         {spiritualMessage && (
-          <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-blue-900 text-sm relative italic">
-            <Quote className="absolute -top-2 -left-2 text-blue-200" size={32} />
+          <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-[#0a3055] text-sm relative italic font-medium leading-relaxed">
+            <Quote className="absolute -top-3 -left-3 text-blue-200" size={40} />
             {spiritualMessage}
+            <div className="mt-2 text-[10px] uppercase tracking-widest text-blue-400 font-bold not-italic">Mensagem para seu Coração</div>
           </div>
         )}
 
         <PixSection />
 
-        <Button variant="outline" onClick={() => { setView('form'); setStep(1); }} className="w-full">
-          Fazer outra inscrição
+        <Button variant="outline" onClick={() => { setView('form'); setStep(1); }} className="w-full py-4 rounded-2xl">
+          Voltar para Início
         </Button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-white py-0 font-sans flex flex-col items-center">
-      {/* Container Principal com Estilo do Cartaz */}
+    <div className="min-h-screen bg-slate-50 py-0 font-sans flex flex-col items-center">
       <div className="max-w-2xl w-full bg-white shadow-2xl overflow-hidden min-h-screen flex flex-col">
         
-        {/* Header - Azul Royal Profundo */}
-        <div className="bg-[#0a3055] p-8 md:p-12 text-center relative overflow-hidden">
-          {/* Elementos Decorativos de Mandala (Simulados com gradientes circulares) */}
+        {/* Header - Design do Cartaz */}
+        <div className="bg-[#0a3055] p-8 md:p-12 text-center relative overflow-hidden border-b-8 border-[#ec4899]">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-400/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl"></div>
           
@@ -256,47 +260,52 @@ const App = () => {
             <span className="text-blue-200 text-xs uppercase tracking-[0.2em]">Com a presença ilustre de</span>
           </div>
           
-          {/* Ênfase no Nome do Maharaja */}
           <h1 className="text-3xl md:text-5xl font-extrabold mb-6 text-[#facc15] font-serif leading-tight drop-shadow-lg">
             {EVENT_INFO.guest}
           </h1>
 
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {EVENT_INFO.activities.map(act => (
-              <span key={act} className="px-3 py-1 bg-white/10 rounded-full text-white text-[10px] uppercase font-bold border border-white/20">
+              <span key={act} className="px-3 py-1 bg-white/10 rounded-full text-white text-[10px] uppercase font-bold border border-white/20 backdrop-blur-sm">
                 {act}
               </span>
             ))}
           </div>
 
           <div className="flex flex-col items-center gap-2 text-white">
-            <div className="flex items-center gap-2 bg-pink-600 px-6 py-2 rounded-full font-black text-lg shadow-xl animate-pulse">
+            <div className="flex items-center gap-2 bg-[#ec4899] px-6 py-2 rounded-full font-black text-lg shadow-xl">
               <Calendar size={20} />
               {EVENT_INFO.dates} a partir das {EVENT_INFO.startTime}h
             </div>
             <div className="flex items-center gap-2 text-blue-100 text-sm mt-2">
-              <MapPin size={16} className="text-pink-500" />
+              <MapPin size={16} className="text-[#ec4899]" />
               <span className="font-medium">{EVENT_INFO.address}</span>
             </div>
-            <span className="text-xs text-blue-200 opacity-80">{EVENT_INFO.location}</span>
           </div>
         </div>
 
-        {/* Formulário de Inscrição */}
+        {/* Content Section */}
         <form onSubmit={handleSubmit} className="flex-1 p-6 md:p-10 space-y-8 bg-white">
-          <div className="flex items-center justify-between border-b pb-4">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${step === 1 ? 'bg-pink-600 text-white' : 'bg-green-500 text-white'}`}>
-                {step === 1 ? '1' : <CheckCircle size={18}/>}
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-between border-b pb-6">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold transition-all shadow-md ${step === 1 ? 'bg-[#ec4899] text-white' : 'bg-green-500 text-white'}`}>
+                {step === 1 ? '1' : <Check size={20}/>}
               </div>
-              <span className="font-bold text-slate-700">Participação</span>
+              <div className="flex flex-col">
+                <span className="font-black text-[#0a3055] uppercase text-xs tracking-wider">Passo 01</span>
+                <span className={`text-sm font-bold ${step === 1 ? 'text-slate-800' : 'text-slate-400'}`}>Participação</span>
+              </div>
             </div>
-            <div className="w-12 h-0.5 bg-slate-100"></div>
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-colors ${step === 2 ? 'bg-pink-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+            <div className="w-12 h-1 bg-slate-100 rounded-full"></div>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold transition-all shadow-md ${step === 2 ? 'bg-[#ec4899] text-white' : 'bg-slate-100 text-slate-400'}`}>
                 2
               </div>
-              <span className="font-bold text-slate-400">Dados</span>
+              <div className="flex flex-col">
+                <span className="font-black text-slate-400 uppercase text-xs tracking-wider">Passo 02</span>
+                <span className={`text-sm font-bold ${step === 2 ? 'text-slate-800' : 'text-slate-400'}`}>Seus Dados</span>
+              </div>
             </div>
           </div>
 
@@ -306,59 +315,73 @@ const App = () => {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, participationType: 'hosting' }))}
-                  className={`p-6 rounded-2xl border-2 text-left transition-all flex justify-between items-center group ${formData.participationType === 'hosting' ? 'border-pink-500 bg-pink-50/50' : 'border-slate-100 bg-slate-50 hover:border-slate-300'}`}
+                  className={`p-6 rounded-[30px] border-2 text-left transition-all flex justify-between items-center group ${formData.participationType === 'hosting' ? 'border-[#ec4899] bg-pink-50/50 shadow-lg' : 'border-slate-100 bg-slate-50 hover:border-slate-300'}`}
                 >
                   <div className="flex gap-4 items-center">
-                    <div className={`p-3 rounded-xl ${formData.participationType === 'hosting' ? 'bg-pink-500 text-white' : 'bg-white text-slate-400'}`}>
-                      <Home size={24} />
+                    <div className={`p-4 rounded-2xl shadow-sm ${formData.participationType === 'hosting' ? 'bg-[#ec4899] text-white' : 'bg-white text-slate-400'}`}>
+                      <Home size={28} />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Hospedagem Completa</p>
-                      <p className="text-xs text-slate-500">Inclui pernoite e alimentação {EVENT_INFO.fullDates}</p>
+                      <p className="font-black text-slate-800 text-lg">Hospedagem Completa</p>
+                      <p className="text-xs text-slate-500 font-medium">Imersão Total: {EVENT_INFO.fullDates}</p>
                     </div>
                   </div>
-                  {formData.participationType === 'hosting' && <CheckCircle className="text-pink-600" size={24} />}
+                  {formData.participationType === 'hosting' && <CheckCircle className="text-[#ec4899]" size={28} />}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, participationType: 'dayuse', hostingStatus: null }))}
-                  className={`p-6 rounded-2xl border-2 text-left transition-all flex justify-between items-center group ${formData.participationType === 'dayuse' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-100 bg-slate-50 hover:border-slate-300'}`}
+                  className={`p-6 rounded-[30px] border-2 text-left transition-all flex justify-between items-center group ${formData.participationType === 'dayuse' ? 'border-blue-500 bg-blue-50/50 shadow-lg' : 'border-slate-100 bg-slate-50 hover:border-slate-300'}`}
                 >
                   <div className="flex gap-4 items-center">
-                    <div className={`p-3 rounded-xl ${formData.participationType === 'dayuse' ? 'bg-blue-500 text-white' : 'bg-white text-slate-400'}`}>
-                      <Clock size={24} />
+                    <div className={`p-4 rounded-2xl shadow-sm ${formData.participationType === 'dayuse' ? 'bg-blue-500 text-white' : 'bg-white text-slate-400'}`}>
+                      <Clock size={28} />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Day Use (Grátis)</p>
-                      <p className="text-xs text-slate-500">Visitação diária para palestras e kirtans</p>
+                      <p className="font-black text-slate-800 text-lg">Day Use (Apenas Visita)</p>
+                      <p className="text-xs text-slate-500 font-medium">Entrada livre para as atividades</p>
                     </div>
                   </div>
-                  {formData.participationType === 'dayuse' && <CheckCircle className="text-blue-600" size={24} />}
+                  {formData.participationType === 'dayuse' && <CheckCircle className="text-blue-600" size={28} />}
                 </button>
               </div>
 
               {formData.participationType === 'hosting' && (
-                <div className="bg-pink-50/30 rounded-3xl p-6 border border-pink-100 space-y-4 animate-in zoom-in-95">
-                  <p className="text-center font-bold text-pink-900 text-sm">Status da Reserva do Pacote</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'paid' }))} className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${formData.hostingStatus === 'paid' ? 'bg-pink-600 text-white border-pink-600 shadow-lg' : 'bg-white text-pink-600 border-pink-100'}`}>Já Paguei</button>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }))} className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${formData.hostingStatus === 'reserving' ? 'bg-pink-600 text-white border-pink-600 shadow-lg' : 'bg-white text-pink-600 border-pink-100'}`}>Vou Pagar</button>
+                <div className="bg-pink-50/30 rounded-[35px] p-8 border border-pink-100 space-y-6 animate-in zoom-in-95">
+                  <div className="text-center space-y-1">
+                    <p className="font-black text-[#ec4899] uppercase text-xs tracking-[0.2em]">Confirmação de Reserva</p>
+                    <p className="text-slate-600 text-sm">A hospedagem requer reserva prévia.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'paid' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'paid' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Já Paguei</button>
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'reserving' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Vou Pagar</button>
                   </div>
 
                   {formData.hostingStatus === 'reserving' && (
-                    <div className="bg-white rounded-2xl p-4 border border-pink-100 space-y-3 shadow-sm">
+                    <div className="bg-white rounded-3xl p-6 border border-pink-100 space-y-4 shadow-sm animate-in fade-in duration-300">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-pink-600">PIX para Reserva</span>
-                        <span className="text-lg font-black text-pink-700">R$ {ACCOMMODATION_CONFIG.price.toFixed(2)}</span>
+                        <div className="flex items-center gap-2">
+                          {/* Fix: Use CheckCircle instead of CheckCircle2 as it is already imported */}
+                          <CheckCircle size={16} className="text-emerald-500" />
+                          <span className="text-xs font-bold text-slate-500">Valor do Pacote</span>
+                        </div>
+                        <span className="text-xl font-black text-[#ec4899]">R$ {ACCOMMODATION_CONFIG.price.toFixed(2)}</span>
                       </div>
-                      <div className="bg-slate-50 p-3 rounded-xl flex justify-between items-center">
-                        <span className="text-xs font-mono text-slate-600 truncate mr-2">{ACCOMMODATION_CONFIG.pixKey}</span>
-                        <button type="button" onClick={() => copyText(ACCOMMODATION_CONFIG.pixKey)} className="text-blue-600">
-                          {copied ? <Check size={18}/> : <Copy size={18}/>}
+                      <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chave PIX</span>
+                          <span className="text-xs font-mono text-slate-700 truncate font-bold">{ACCOMMODATION_CONFIG.pixKey}</span>
+                        </div>
+                        <button type="button" onClick={() => copyText(ACCOMMODATION_CONFIG.pixKey)} className="text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors">
+                          {copied ? <Check size={20}/> : <Copy size={20}/>}
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-400">Favorecido: {ACCOMMODATION_CONFIG.pixName}</p>
+                      <div className="flex items-center gap-2 bg-pink-50/50 p-2 rounded-xl">
+                        <Info size={14} className="text-pink-400" />
+                        <span className="text-[10px] text-pink-700 font-bold uppercase tracking-tighter">Enviar comprovante pelo WhatsApp após o cadastro</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -366,24 +389,25 @@ const App = () => {
 
               {formData.participationType === 'dayuse' && (
                 <div className="space-y-4 animate-in slide-in-from-top-4">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold mb-2">
-                    <Calendar size={18}/>
-                    <span>Selecione os dias da sua visita</span>
+                  <div className="flex items-center gap-3 text-blue-700 font-black uppercase text-xs tracking-widest bg-blue-50 px-4 py-2 rounded-full w-fit">
+                    <Calendar size={16}/>
+                    <span>Selecione seus dias de presença</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { id: 'day31', label: '31 Dez', sub: 'Virada de Ano' },
-                      { id: 'day01', label: '01 Jan', sub: 'Início do Ano' },
+                      { id: 'day31', label: '31 Dez', sub: 'Mantras & Virada' },
+                      { id: 'day01', label: '01 Jan', sub: 'Imersão' },
                       { id: 'day02', label: '02 Jan', sub: 'Encerramento' }
                     ].map((d) => (
                       <button
                         key={d.id}
                         type="button"
                         onClick={() => handleDayChange(d.id as keyof ParticipationDays)}
-                        className={`p-4 rounded-2xl border-2 text-center transition-all flex flex-col items-center ${formData.days[d.id as keyof ParticipationDays] ? 'border-blue-500 bg-blue-50 shadow-md scale-105' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                        className={`p-5 rounded-[25px] border-2 text-center transition-all flex flex-col items-center gap-1 ${formData.days[d.id as keyof ParticipationDays] ? 'border-blue-500 bg-blue-50 shadow-lg scale-105' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-blue-200'}`}
                       >
-                        <span className={`text-sm font-black ${formData.days[d.id as keyof ParticipationDays] ? 'text-blue-900' : ''}`}>{d.label}</span>
-                        <p className="text-[10px] opacity-60 uppercase tracking-tighter mt-1">{d.sub}</p>
+                        <span className={`text-base font-black ${formData.days[d.id as keyof ParticipationDays] ? 'text-blue-900' : ''}`}>{d.label}</span>
+                        <p className="text-[10px] opacity-70 uppercase font-bold tracking-tight">{d.sub}</p>
+                        {formData.days[d.id as keyof ParticipationDays] && <Sparkle size={12} className="text-blue-500 mt-1 animate-spin-slow" />}
                       </button>
                     ))}
                   </div>
@@ -392,44 +416,50 @@ const App = () => {
             </div>
           ) : (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input required name="civilName" label="Nome Completo *" value={formData.civilName} onChange={handleInputChange} placeholder="Como no documento" />
-                  <Input name="spiritualName" label="Nome Espiritual" value={formData.spiritualName} onChange={handleInputChange} placeholder="Ex: Hare Krishna Das" />
-                  <Input required name="rg" label="RG / Documento *" value={formData.rg} onChange={handleInputChange} placeholder="Identificação" />
-                  <Input required type="tel" name="phone" label="WhatsApp *" value={formData.phone} onChange={handleInputChange} placeholder="(DDD) 9...." />
+              <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 space-y-6 shadow-inner">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Input required name="civilName" label="Nome Completo *" value={formData.civilName} onChange={handleInputChange} placeholder="Como no documento" icon={<User size={14}/>} />
+                  <Input name="spiritualName" label="Nome Espiritual" value={formData.spiritualName} onChange={handleInputChange} placeholder="Ex: Sri Krishna Das" icon={<Sparkles size={14}/>} />
+                  <Input required name="rg" label="RG / Documento *" value={formData.rg} onChange={handleInputChange} placeholder="Para identificação" icon={<Lock size={14}/>} />
+                  <Input required type="tel" name="phone" label="WhatsApp *" value={formData.phone} onChange={handleInputChange} placeholder="(DDD) 9...." icon={<Phone size={14}/>} />
                 </div>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">Tipo Sanguíneo</label>
-                    <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-blue-500/10 outline-none">
+                    <label className="text-sm font-black text-slate-700 uppercase tracking-tighter flex items-center gap-2">
+                      <Heart size={14} className="text-red-400" /> Tipo Sanguíneo
+                    </label>
+                    <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700">
                       <option value="">Selecione...</option>
                       {BLOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <Textarea name="restrictions" label="Restrições Alimentares / Saúde" value={formData.restrictions} onChange={handleInputChange} placeholder="Alergias, Vegano, Medicamentos..." />
+                    <Textarea name="restrictions" label="Restrições Alimentares / Saúde" value={formData.restrictions} onChange={handleInputChange} placeholder="Alergias, Vegano, Medicamentos..." icon={<UtensilsCrossed size={14}/>} />
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Rodapé do Formulário - Gradiente Rosa */}
-          <div className="pt-6 border-t flex gap-4">
+          <div className="pt-8 flex gap-4">
             {step === 2 && (
-              <button type="button" onClick={() => setStep(1)} className="p-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all">
-                <ArrowLeft size={24} />
+              <button type="button" onClick={() => setStep(1)} className="p-5 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all shadow-sm">
+                <ArrowLeft size={28} />
               </button>
             )}
             <button
               type="submit"
               disabled={loading}
-              className={`flex-1 font-black py-5 rounded-2xl shadow-2xl transition transform active:scale-95 flex justify-center items-center gap-2 text-xl disabled:opacity-50 ${step === 1 ? 'bg-[#0a3055] text-white hover:bg-blue-900' : 'bg-pink-600 text-white hover:bg-pink-700'}`}
+              className={`flex-1 font-black py-5 rounded-[25px] shadow-2xl transition transform active:scale-95 flex justify-center items-center gap-3 text-xl disabled:opacity-50 ${step === 1 ? 'bg-[#0a3055] text-white hover:bg-blue-900' : 'bg-[#ec4899] text-white hover:bg-pink-700'}`}
             >
-              {loading ? 'Processando...' : (
+              {loading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Sincronizando...
+                </div>
+              ) : (
                 <>
-                  {step === 1 ? 'Próximo Passo' : 'Confirmar no WhatsApp'}
+                  {step === 1 ? 'Continuar Inscrição' : 'Confirmar Presença'}
                   <ChevronRight size={24} />
                 </>
               )}
@@ -437,45 +467,90 @@ const App = () => {
           </div>
         </form>
 
-        {/* Footer do Cartaz - Rosa Vibrante */}
-        <div className="bg-pink-600 p-8 text-center text-white relative">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        {/* Footer Area - Design do Cartaz */}
+        <div className="bg-[#ec4899] p-10 text-center text-white relative">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-left">
-              <p className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">Dúvidas e Informações</p>
-              <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-lg font-black hover:text-yellow-200 transition">
-                <Phone size={18}/> {ORGANIZER_PHONE.replace('55', '')} (Amrtananda das)
+              <p className="text-[11px] uppercase font-black tracking-[0.2em] opacity-80 mb-2">Suporte & Informações</p>
+              <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-xl font-black hover:text-yellow-200 transition group">
+                <div className="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <Phone size={20}/>
+                </div>
+                {ORGANIZER_PHONE.replace('55', '')} (Amrtananda das)
               </a>
             </div>
             
             <div className="flex gap-4">
-              <button onClick={() => setShowPixModal(true)} className="p-3 bg-white/20 hover:bg-white/30 rounded-xl transition-all border border-white/20 flex items-center gap-2 text-sm font-bold">
-                <Heart size={18} /> Apoiar
+              <button onClick={() => setShowPixModal(true)} className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl transition-all border border-white/20 flex items-center gap-2 text-sm font-black shadow-lg">
+                <Heart size={18} fill="currentColor" /> Apoiar Festival
               </button>
-              <button onClick={() => setView('login')} className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
-                <Lock size={18} />
+              <button onClick={() => setView('login')} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10">
+                <Lock size={20} />
               </button>
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-white/10 flex justify-center items-center gap-2 text-[10px] font-bold opacity-60 uppercase tracking-tighter">
-            <span>Bhakti Chakor</span>
-            <div className="w-1 h-1 bg-white rounded-full"></div>
-            <span>Palhoça 2025/26</span>
+          
+          <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 text-[10px] font-black opacity-60 uppercase tracking-[0.3em]">
+              <span>Bhakti Chakor</span>
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+              <span>Ano Novo 2025/26</span>
+            </div>
+            <p className="text-[9px] opacity-40 font-bold max-w-xs leading-relaxed uppercase">
+              Festival de Ano Novo com Mantras, Palestras, Jantar Vegetariano e Dança Indiana
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Pix Modal/Overlay */}
+      {/* Modals */}
       {showPixModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[50px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-t-8 border-[#ec4899]">
             <div className="p-6 pb-0 flex justify-end">
-              <button onClick={() => setShowPixModal(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowPixModal(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-600 transition-colors">
                 <X size={24} />
               </button>
             </div>
-            <div className="px-8 pb-10">
+            <div className="px-10 pb-12">
               <PixSection />
-              <Button onClick={() => setShowPixModal(false)} className="w-full mt-6" variant="primary">Fechar</Button>
+              <Button onClick={() => setShowPixModal(false)} className="w-full mt-8 py-4 rounded-2xl" variant="primary">Fechar Janela</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHostingSuggestion && (
+        <div className="fixed inset-0 z-[110] bg-[#0a3055]/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-[50px] shadow-2xl overflow-hidden border-t-[12px] border-[#ec4899] p-10 text-center space-y-8">
+            <div className="bg-pink-100 w-24 h-24 rounded-[30px] flex items-center justify-center mx-auto text-[#ec4899] shadow-inner rotate-3">
+              <Sparkles size={48} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-3xl font-black text-[#0a3055] font-serif uppercase tracking-tight">Imersão Total?</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Vimos que você virá todos os dias! Que tal a experiência completa de hospedagem no Rancho Serra Mar?
+              </p>
+            </div>
+            <div className="bg-blue-50 p-6 rounded-[35px] text-left border border-blue-100 space-y-3">
+              <p className="text-[#0a3055] font-black text-xs uppercase tracking-widest">Incluso no Pacote:</p>
+              <ul className="text-xs text-slate-600 space-y-2 font-bold">
+                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Pernoite em Rancho Paradisiaco</li>
+                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> 3 Refeições Sagradas Diárias</li>
+                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Convívio Íntimo com Srila Gurudeva</li>
+                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Participação no Mangala Arati</li>
+              </ul>
+            </div>
+            <div className="flex flex-col gap-4">
+              <Button onClick={() => {
+                setFormData(prev => ({ ...prev, participationType: 'hosting' }));
+                setShowHostingSuggestion(false);
+              }} className="py-5 text-lg rounded-[25px]">
+                Mudar para Hospedagem
+              </Button>
+              <button onClick={() => setShowHostingSuggestion(false)} className="text-sm font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors">
+                Continuar com Day Use
+              </button>
             </div>
           </div>
         </div>
