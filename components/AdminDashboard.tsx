@@ -14,11 +14,10 @@ import {
   ExternalLink,
   Home,
   AlertCircle,
-  CreditCard,
   CheckCircle2
 } from 'lucide-react';
-import { RegistrationRecord, AdminStats } from '../types';
-import { GOOGLE_SCRIPT_URL, ORGANIZER_PHONE } from '../constants';
+import { RegistrationRecord } from '../types';
+import { GOOGLE_SCRIPT_URL } from '../constants';
 import { Button } from './Button';
 import { 
   BarChart, 
@@ -47,29 +46,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setLoading(false);
       return;
     }
+    
     setLoading(true);
     setError(null);
+    
     try {
-      // Added cache-buster timestamp to ensure fresh data and potentially help with some fetch issues
+      // Adiciona um timestamp para evitar cache do navegador
       const separator = GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?';
       const urlWithCacheBuster = `${GOOGLE_SCRIPT_URL}${separator}t=${new Date().getTime()}`;
       
-      const response = await fetch(urlWithCacheBuster, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      // CRITICAL: Para evitar erro de CORS com Google Scripts, NÃO use cabeçalhos personalizados (headers)
+      // Isso transforma a requisição em uma "Simple Request", que o Google aceita sem preflight.
+      const response = await fetch(urlWithCacheBuster);
 
       if (!response.ok) {
-        throw new Error(`Servidor respondeu com status ${response.status}. Verifique se o script está publicado como "Qualquer pessoa".`);
+        throw new Error(`Status ${response.status}: O script pode estar mal configurado.`);
       }
       
       const json = await response.json();
+      
+      if (json && json.error) {
+        throw new Error(json.error);
+      }
+      
       setData(Array.isArray(json) ? json : []);
     } catch (err: any) {
       console.error("Fetch error detail:", err);
-      setError(`Erro de conexão: ${err.message || "Falha ao carregar dados"}. Certifique-se de que a URL do Script está correta e as permissões de CORS do Google não estão bloqueando o acesso.`);
+      setError(
+        "Não foi possível carregar os dados. Verifique se:\n" +
+        "1. O Google Script foi implantado como 'Qualquer pessoa' (Anyone).\n" +
+        "2. Você não está usando um bloqueador de anúncios que impede o acesso ao Google Scripts.\n" +
+        "3. A URL no arquivo constants.ts está correta."
+      );
     } finally {
       setLoading(false);
     }
@@ -128,7 +136,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `inscricoes_ano_novo_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `inscricoes_festival_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -166,11 +174,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-red-700 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 shadow-sm">
-            <AlertCircle size={20} className="shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="text-sm font-bold">Erro de Carregamento</span>
-              <p className="text-xs opacity-80">{error}</p>
+          <div className="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-700 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 shadow-sm">
+            <AlertCircle size={24} className="shrink-0 mt-1" />
+            <div className="space-y-2">
+              <span className="text-lg font-bold">Erro de Carregamento</span>
+              <p className="text-sm whitespace-pre-line leading-relaxed">{error}</p>
+              <Button size="sm" variant="danger" className="mt-2" onClick={fetchData}>Tentar Novamente</Button>
             </div>
           </div>
         )}
@@ -204,10 +213,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           />
         </div>
 
-        {/* Charts and Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Chart View */}
           <div className="lg:col-span-1 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <h3 className="text-lg font-bold text-slate-800 mb-8">Participação por Dia</h3>
             <div className="h-[300px] w-full">
@@ -230,7 +236,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Table View */}
           <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center gap-4">
               <div className="relative flex-1">

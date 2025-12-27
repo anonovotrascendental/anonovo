@@ -6,7 +6,6 @@ import {
   Phone, 
   Info, 
   CheckCircle, 
-  Leaf, 
   Lock, 
   X, 
   Home,
@@ -20,9 +19,10 @@ import {
   Sparkles,
   Quote,
   CircleCheckBig,
-  Music,
   UtensilsCrossed,
-  Sparkle
+  Sparkle,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -48,6 +48,7 @@ const App = () => {
   const [copied, setCopied] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
   const [showHostingSuggestion, setShowHostingSuggestion] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     participationType: null,
@@ -60,6 +61,43 @@ const App = () => {
     restrictions: '',
     days: { day31: false, day01: false, day02: false }
   });
+
+  const getWhatsAppLink = () => {
+    const selectedDaysList: string[] = [];
+    if (formData.participationType === 'hosting') {
+      selectedDaysList.push("Hospedagem (Pacote Completo)");
+    } else {
+      if (formData.days.day31) selectedDaysList.push("31/Dez");
+      if (formData.days.day01) selectedDaysList.push("01/Jan");
+      if (formData.days.day02) selectedDaysList.push("02/Jan");
+    }
+
+    const message = `*Inscrição - ${EVENT_INFO.title}* 🌸\n\n` +
+      `*Mestre:* ${EVENT_INFO.guest}\n` +
+      `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem 🏠' : 'Day Use ☀️'}\n` +
+      `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago ✅' : formData.hostingStatus === 'reserving' ? 'Vou reservar ⏳' : 'N/A'}\n` +
+      `*Inscrito:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
+      `*WhatsApp:* ${formData.phone}\n` +
+      `*RG:* ${formData.rg}\n` +
+      `*Dias:* ${selectedDaysList.join(', ')}\n` +
+      `*Tipo Sanguíneo:* ${formData.bloodType || 'Não informado'}\n` +
+      `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
+      `_Enviado pelo App Oficial do Festival_`;
+
+    return `https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`;
+  };
+
+  useEffect(() => {
+    let timer: number;
+    if (view === 'success' && countdown > 0) {
+      timer = window.setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (view === 'success' && countdown === 0) {
+      window.location.href = getWhatsAppLink();
+    }
+    return () => clearInterval(timer);
+  }, [view, countdown]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -141,17 +179,7 @@ const App = () => {
 
       const guidance = await guidancePromise;
       setSpiritualMessage(guidance ?? null);
-
-      const message = `*Inscrição - ${EVENT_INFO.title}* 🌸\n` +
-        `*Mestre:* ${EVENT_INFO.guest}\n` +
-        `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}\n` +
-        `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago' : formData.hostingStatus === 'reserving' ? 'Vou reservar' : 'N/A'}\n` +
-        `*Inscrito:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
-        `*Dias:* ${payload.selectedDays}\n` +
-        `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
-        `_Enviado pelo App Oficial do Festival_`;
-
-      window.open(`https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
+      setCountdown(5); // Reset countdown for the success view
       setView('success');
     } catch (error) {
       alert("Erro ao processar sua inscrição. Tente novamente.");
@@ -217,28 +245,56 @@ const App = () => {
 
   if (view === 'success') return (
     <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-md w-full text-center border-t-[12px] border-[#ec4899] space-y-8 animate-in zoom-in-95 duration-500">
-        <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-inner">
-          <CircleCheckBig size={56} />
+      <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-md w-full text-center border-t-[12px] border-[#ec4899] space-y-6 animate-in zoom-in-95 duration-500">
+        <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-inner">
+          <CircleCheckBig size={48} />
         </div>
         <div>
-          <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight">Inscrição Iniciada!</h2>
+          <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight leading-none">Inscrição Iniciada!</h2>
           <p className="text-slate-500 text-sm italic font-medium">"O sucesso espiritual é garantido por Sri Guru e Gauranga."</p>
         </div>
         
         {spiritualMessage && (
           <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-[#0a3055] text-sm relative italic font-medium leading-relaxed">
-            <Quote className="absolute -top-3 -left-3 text-blue-200" size={40} />
+            <Quote className="absolute -top-3 -left-3 text-blue-200" size={32} />
             {spiritualMessage}
             <div className="mt-2 text-[10px] uppercase tracking-widest text-blue-400 font-bold not-italic">Mensagem para seu Coração</div>
           </div>
         )}
 
-        <PixSection />
+        <div className="bg-pink-50 p-6 rounded-3xl border-2 border-dashed border-pink-200 space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-3 text-[#ec4899] font-black text-sm uppercase tracking-widest">
+              <Loader2 className="animate-spin" size={18} />
+              <span>Redirecionando para o WhatsApp</span>
+            </div>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 w-8 rounded-full transition-all duration-500 ${i <= (5 - countdown) ? 'bg-[#ec4899]' : 'bg-pink-200'}`}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold uppercase">Aguarde {countdown}s para finalizar o envio</p>
+          </div>
+          
+          <Button 
+            onClick={() => window.location.href = getWhatsAppLink()} 
+            className="w-full py-4 text-sm rounded-2xl shadow-lg bg-[#ec4899] hover:bg-pink-600 border-none"
+          >
+            Enviar Agora <ExternalLink size={16} className="ml-2" />
+          </Button>
+        </div>
 
-        <Button variant="outline" onClick={() => { setView('form'); setStep(1); }} className="w-full py-4 rounded-2xl">
-          Voltar para Início
-        </Button>
+        <PixSection className="scale-95" />
+
+        <button 
+          onClick={() => { setView('form'); setStep(1); }} 
+          className="text-slate-400 text-xs font-bold hover:text-slate-600 uppercase tracking-widest transition-colors"
+        >
+          Fazer nova inscrição
+        </button>
       </div>
     </div>
   );
@@ -247,7 +303,6 @@ const App = () => {
     <div className="min-h-screen bg-slate-50 py-0 font-sans flex flex-col items-center">
       <div className="max-w-2xl w-full bg-white shadow-2xl overflow-hidden min-h-screen flex flex-col">
         
-        {/* Header - Design do Cartaz */}
         <div className="bg-[#0a3055] p-8 md:p-12 text-center relative overflow-hidden border-b-8 border-[#ec4899]">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-400/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl"></div>
@@ -284,9 +339,7 @@ const App = () => {
           </div>
         </div>
 
-        {/* Content Section */}
         <form onSubmit={handleSubmit} className="flex-1 p-6 md:p-10 space-y-8 bg-white">
-          {/* Progress Indicator */}
           <div className="flex items-center justify-between border-b pb-6">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold transition-all shadow-md ${step === 1 ? 'bg-[#ec4899] text-white' : 'bg-green-500 text-white'}`}>
@@ -363,7 +416,6 @@ const App = () => {
                     <div className="bg-white rounded-3xl p-6 border border-pink-100 space-y-4 shadow-sm animate-in fade-in duration-300">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          {/* Fix: Use CheckCircle instead of CheckCircle2 as it is already imported */}
                           <CheckCircle size={16} className="text-emerald-500" />
                           <span className="text-xs font-bold text-slate-500">Valor do Pacote</span>
                         </div>
@@ -467,7 +519,6 @@ const App = () => {
           </div>
         </form>
 
-        {/* Footer Area - Design do Cartaz */}
         <div className="bg-[#ec4899] p-10 text-center text-white relative">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-left">
@@ -503,7 +554,6 @@ const App = () => {
         </div>
       </div>
 
-      {/* Modals */}
       {showPixModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[50px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-t-8 border-[#ec4899]">
