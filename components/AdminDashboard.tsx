@@ -321,7 +321,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </td>
                         <td className="px-6 py-4">
                           <a 
-                            href={`https://wa.me/${row.phone?.replace(/\D/g, '')}`} 
+                            href={`https://wa.me/${String(row.phone || '').replace(/\D/g, '')}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all inline-block shadow-sm"

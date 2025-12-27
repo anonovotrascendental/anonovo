@@ -22,7 +22,8 @@ import {
   UtensilsCrossed,
   Sparkle,
   ExternalLink,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -48,7 +49,7 @@ const App = () => {
   const [copied, setCopied] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
   const [showHostingSuggestion, setShowHostingSuggestion] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(7);
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     participationType: null,
@@ -72,7 +73,7 @@ const App = () => {
       if (formData.days.day02) selectedDaysList.push("02/Jan");
     }
 
-    const message = `*Inscrição - ${EVENT_INFO.title}* 🌸\n\n` +
+    const message = `*VALIDAÇÃO DE INSCRIÇÃO - ${EVENT_INFO.title}* 🌸\n\n` +
       `*Mestre:* ${EVENT_INFO.guest}\n` +
       `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem 🏠' : 'Day Use ☀️'}\n` +
       `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago ✅' : formData.hostingStatus === 'reserving' ? 'Vou reservar ⏳' : 'N/A'}\n` +
@@ -82,7 +83,7 @@ const App = () => {
       `*Dias:* ${selectedDaysList.join(', ')}\n` +
       `*Tipo Sanguíneo:* ${formData.bloodType || 'Não informado'}\n` +
       `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
-      `_Enviado pelo App Oficial do Festival_`;
+      `_Estou enviando esta mensagem para VALIDAR meu cadastro oficial._`;
 
     return `https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`;
   };
@@ -179,7 +180,7 @@ const App = () => {
 
       const guidance = await guidancePromise;
       setSpiritualMessage(guidance ?? null);
-      setCountdown(5); // Reset countdown for the success view
+      setCountdown(7); 
       setView('success');
     } catch (error) {
       alert("Erro ao processar sua inscrição. Tente novamente.");
@@ -191,13 +192,13 @@ const App = () => {
   const PixSection = ({ className = "" }: { className?: string }) => (
     <div className={`bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center space-y-4 ${className}`}>
       <div className="flex justify-center">
-        <div className="bg-emerald-100 p-3 rounded-full text-emerald-600">
+        <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 shadow-inner">
           <Heart size={24} fill="currentColor" className="animate-pulse" />
         </div>
       </div>
       <div>
         <h4 className="font-bold text-emerald-900">Contribuição Voluntária</h4>
-        <p className="text-xs text-emerald-700/70 mt-1">{PIX_CONFIG.description}</p>
+        <p className="text-xs text-emerald-700/70 mt-1 leading-tight">{PIX_CONFIG.description}</p>
       </div>
       <div className="bg-white p-4 rounded-xl shadow-inner border border-emerald-50 space-y-3">
         <div className="flex items-center justify-between gap-3 text-left">
@@ -213,16 +214,13 @@ const App = () => {
             {copied ? <Check size={18}/> : <Copy size={18}/>}
           </button>
         </div>
-        <div className="text-[10px] text-slate-400 text-left pt-2 border-t border-slate-50">
-          <p><strong>Favorecido:</strong> {PIX_CONFIG.receiver}</p>
-        </div>
       </div>
     </div>
   );
 
   if (view === 'login') return (
     <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center border-b-4 border-amber-500">
         <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
           <Lock size={32} />
         </div>
@@ -245,56 +243,75 @@ const App = () => {
 
   if (view === 'success') return (
     <div className="min-h-screen bg-[#0a3055] flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-[40px] shadow-2xl max-w-md w-full text-center border-t-[12px] border-[#ec4899] space-y-6 animate-in zoom-in-95 duration-500">
-        <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-inner">
-          <CircleCheckBig size={48} />
+      <div className="bg-white p-8 md:p-10 rounded-[45px] shadow-2xl max-w-lg w-full text-center border-t-[14px] border-[#ec4899] space-y-6 animate-in zoom-in-95 duration-500">
+        
+        <div className="relative inline-block">
+          <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-inner">
+            <ShieldCheck size={56} className="animate-bounce" />
+          </div>
+          <div className="absolute -top-2 -right-2 bg-[#ec4899] text-white p-2 rounded-full shadow-lg">
+            <Sparkles size={16} />
+          </div>
         </div>
+
         <div>
-          <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight leading-none">Inscrição Iniciada!</h2>
-          <p className="text-slate-500 text-sm italic font-medium">"O sucesso espiritual é garantido por Sri Guru e Gauranga."</p>
+          <h2 className="text-3xl font-black text-[#0a3055] mb-2 font-serif uppercase tracking-tight leading-none">Dados Recebidos!</h2>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest bg-slate-100 py-1 px-4 rounded-full inline-block">Falta apenas 1 etapa</p>
         </div>
         
         {spiritualMessage && (
-          <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-[#0a3055] text-sm relative italic font-medium leading-relaxed">
+          <div className="bg-blue-50/50 p-6 rounded-[35px] border border-blue-100 text-[#0a3055] text-sm relative italic font-medium leading-relaxed shadow-sm">
             <Quote className="absolute -top-3 -left-3 text-blue-200" size={32} />
             {spiritualMessage}
-            <div className="mt-2 text-[10px] uppercase tracking-widest text-blue-400 font-bold not-italic">Mensagem para seu Coração</div>
+            <div className="mt-2 text-[10px] uppercase tracking-widest text-blue-400 font-bold not-italic">Sua Benção de Ano Novo</div>
           </div>
         )}
 
-        <div className="bg-pink-50 p-6 rounded-3xl border-2 border-dashed border-pink-200 space-y-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-3 text-[#ec4899] font-black text-sm uppercase tracking-widest">
-              <Loader2 className="animate-spin" size={18} />
-              <span>Redirecionando para o WhatsApp</span>
-            </div>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div 
-                  key={i} 
-                  className={`h-1.5 w-8 rounded-full transition-all duration-500 ${i <= (5 - countdown) ? 'bg-[#ec4899]' : 'bg-pink-200'}`}
-                />
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Aguarde {countdown}s para finalizar o envio</p>
+        <div className="bg-emerald-50 p-8 rounded-[40px] border-2 border-emerald-100 space-y-5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+             <Phone size={80} />
           </div>
           
-          <Button 
-            onClick={() => window.location.href = getWhatsAppLink()} 
-            className="w-full py-4 text-sm rounded-2xl shadow-lg bg-[#ec4899] hover:bg-pink-600 border-none"
-          >
-            Enviar Agora <ExternalLink size={16} className="ml-2" />
-          </Button>
+          <div className="flex flex-col items-center gap-2">
+            <h3 className="font-black text-emerald-800 uppercase text-lg tracking-tighter">Validação Obrigatória</h3>
+            <p className="text-emerald-700/60 text-xs font-medium max-w-[240px] mx-auto">
+              Para oficializar sua presença e garantir seu Prasadam, envie seus dados para nossa equipe agora.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Button 
+              onClick={() => window.location.href = getWhatsAppLink()} 
+              className="w-full py-6 text-xl rounded-[25px] shadow-xl bg-emerald-600 hover:bg-emerald-700 border-none animate-pulse hover:animate-none group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="bg-white/20 p-2 rounded-lg"><Phone size={24} /></span>
+                VALIDAR NO WHATSAPP
+              </div>
+            </Button>
+            
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-1 flex-1 bg-emerald-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-1000 ease-linear"
+                  style={{ width: `${((7 - countdown) / 7) * 100}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tabular-nums">Validação automática em {countdown}s</span>
+            </div>
+          </div>
         </div>
 
-        <PixSection className="scale-95" />
+        <PixSection className="scale-95 opacity-80 hover:opacity-100 transition-opacity" />
 
-        <button 
-          onClick={() => { setView('form'); setStep(1); }} 
-          className="text-slate-400 text-xs font-bold hover:text-slate-600 uppercase tracking-widest transition-colors"
-        >
-          Fazer nova inscrição
-        </button>
+        <div className="pt-2">
+          <button 
+            onClick={() => { setView('form'); setStep(1); }} 
+            className="text-slate-300 text-[10px] font-black hover:text-slate-500 uppercase tracking-[0.3em] transition-colors border-b border-transparent hover:border-slate-300 pb-1"
+          >
+            Realizar Outra Inscrição
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -411,31 +428,6 @@ const App = () => {
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'paid' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'paid' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Já Paguei</button>
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }))} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.hostingStatus === 'reserving' ? 'bg-[#ec4899] text-white border-[#ec4899] shadow-xl scale-105' : 'bg-white text-[#ec4899] border-pink-100 hover:border-pink-300'}`}>Vou Pagar</button>
                   </div>
-
-                  {formData.hostingStatus === 'reserving' && (
-                    <div className="bg-white rounded-3xl p-6 border border-pink-100 space-y-4 shadow-sm animate-in fade-in duration-300">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle size={16} className="text-emerald-500" />
-                          <span className="text-xs font-bold text-slate-500">Valor do Pacote</span>
-                        </div>
-                        <span className="text-xl font-black text-[#ec4899]">R$ {ACCOMMODATION_CONFIG.price.toFixed(2)}</span>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group">
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chave PIX</span>
-                          <span className="text-xs font-mono text-slate-700 truncate font-bold">{ACCOMMODATION_CONFIG.pixKey}</span>
-                        </div>
-                        <button type="button" onClick={() => copyText(ACCOMMODATION_CONFIG.pixKey)} className="text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors">
-                          {copied ? <Check size={20}/> : <Copy size={20}/>}
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 bg-pink-50/50 p-2 rounded-xl">
-                        <Info size={14} className="text-pink-400" />
-                        <span className="text-[10px] text-pink-700 font-bold uppercase tracking-tighter">Enviar comprovante pelo WhatsApp após o cadastro</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -511,7 +503,7 @@ const App = () => {
                 </div>
               ) : (
                 <>
-                  {step === 1 ? 'Continuar Inscrição' : 'Confirmar Presença'}
+                  {step === 1 ? 'Continuar Inscrição' : 'Finalizar e Validar no WhatsApp'}
                   <ChevronRight size={24} />
                 </>
               )}
@@ -539,17 +531,6 @@ const App = () => {
                 <Lock size={20} />
               </button>
             </div>
-          </div>
-          
-          <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2 text-[10px] font-black opacity-60 uppercase tracking-[0.3em]">
-              <span>Bhakti Chakor</span>
-              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
-              <span>Ano Novo 2025/26</span>
-            </div>
-            <p className="text-[9px] opacity-40 font-bold max-w-xs leading-relaxed uppercase">
-              Festival de Ano Novo com Mantras, Palestras, Jantar Vegetariano e Dança Indiana
-            </p>
           </div>
         </div>
       </div>
@@ -581,15 +562,6 @@ const App = () => {
               <p className="text-slate-500 font-medium leading-relaxed">
                 Vimos que você virá todos os dias! Que tal a experiência completa de hospedagem no Rancho Serra Mar?
               </p>
-            </div>
-            <div className="bg-blue-50 p-6 rounded-[35px] text-left border border-blue-100 space-y-3">
-              <p className="text-[#0a3055] font-black text-xs uppercase tracking-widest">Incluso no Pacote:</p>
-              <ul className="text-xs text-slate-600 space-y-2 font-bold">
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Pernoite em Rancho Paradisiaco</li>
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> 3 Refeições Sagradas Diárias</li>
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Convívio Íntimo com Srila Gurudeva</li>
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#ec4899] rounded-full"></div> Participação no Mangala Arati</li>
-              </ul>
             </div>
             <div className="flex flex-col gap-4">
               <Button onClick={() => {
