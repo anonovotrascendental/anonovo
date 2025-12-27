@@ -5,7 +5,12 @@ export interface ParticipationDays {
   day02: boolean;
 }
 
+export type ParticipationType = 'hosting' | 'dayuse' | null;
+export type HostingStatus = 'paid' | 'reserving' | null;
+
 export interface RegistrationFormData {
+  participationType: ParticipationType;
+  hostingStatus: HostingStatus;
   spiritualName: string;
   civilName: string;
   rg: string;

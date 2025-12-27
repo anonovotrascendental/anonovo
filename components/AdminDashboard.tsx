@@ -11,7 +11,8 @@ import {
   Database,
   RefreshCw,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Home
 } from 'lucide-react';
 import { RegistrationRecord, AdminStats } from '../types';
 import { GOOGLE_SCRIPT_URL, ORGANIZER_PHONE } from '../constants';
@@ -59,12 +60,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     fetchData();
   }, []);
 
-  const stats = useMemo<AdminStats>(() => {
+  const stats = useMemo(() => {
     return {
       total: data.length,
       day31: data.filter(r => (r.selectedDays || '').includes('31')).length,
       day01: data.filter(r => (r.selectedDays || '').includes('01')).length,
       day02: data.filter(r => (r.selectedDays || '').includes('02')).length,
+      hosting: data.filter(r => r.participationType === 'hosting').length,
       restrictions: data.filter(r => (r.restrictions || '').length > 3).length
     };
   }, [data]);
@@ -79,13 +81,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     { name: '31/Dez', count: stats.day31, color: '#f59e0b' },
     { name: '01/Jan', count: stats.day01, color: '#3b82f6' },
     { name: '02/Jan', count: stats.day02, color: '#10b981' },
+    { name: 'Hosped.', count: stats.hosting, color: '#8b5cf6' },
   ];
 
   const exportCSV = () => {
-    const headers = ["Nome Civil", "Nome Espiritual", "RG", "WhatsApp", "Dias", "Restrições", "Tipo Sanguíneo"];
+    const headers = ["Nome Civil", "Nome Espiritual", "Tipo", "Reserva", "RG", "WhatsApp", "Dias", "Restrições", "Tipo Sanguíneo"];
     const rows = data.map(r => [
       r.civilName, 
       r.spiritualName, 
+      r.participationType === 'hosting' ? 'Hospedagem' : 'Day Use',
+      r.hostingStatus === 'paid' ? 'Pago' : r.hostingStatus === 'reserving' ? 'Pendente' : 'N/A',
       r.rg, 
       r.phone, 
       r.selectedDays, 
@@ -138,27 +143,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </div>
 
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard 
-            title="Total Inscritos" 
+            title="Total" 
             value={stats.total} 
             icon={<Users className="text-blue-600" />} 
             color="bg-blue-50"
           />
           <StatCard 
-            title="Almoço 31/Dez" 
+            title="Hospedagem" 
+            value={stats.hosting} 
+            icon={<Home className="text-purple-600" />} 
+            color="bg-purple-50"
+          />
+          <StatCard 
+            title="31/Dez" 
             value={stats.day31} 
             icon={<Calendar className="text-amber-600" />} 
             color="bg-amber-50"
           />
           <StatCard 
-            title="Almoço 01/Jan" 
+            title="01/Jan" 
             value={stats.day01} 
             icon={<Calendar className="text-emerald-600" />} 
             color="bg-emerald-50"
           />
           <StatCard 
-            title="Alertas Restrição" 
+            title="Alertas" 
             value={stats.restrictions} 
             icon={<AlertTriangle className="text-red-600" />} 
             color="bg-red-50"
@@ -188,17 +199,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="mt-6 space-y-3">
-              {chartData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-slate-500">{item.name}</span>
-                  </div>
-                  <span className="font-bold text-slate-700">{item.count} pessoas</span>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -234,6 +234,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   <thead>
                     <tr className="bg-slate-50/50 text-slate-400 text-xs font-bold uppercase tracking-wider">
                       <th className="px-6 py-4">Inscrito</th>
+                      <th className="px-6 py-4">Tipo</th>
                       <th className="px-6 py-4">Dias</th>
                       <th className="px-6 py-4">Observações</th>
                       <th className="px-6 py-4">Contato</th>
@@ -246,6 +247,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                           <div className="font-bold text-slate-800">{row.civilName}</div>
                           <div className="text-xs text-amber-600 font-medium">{row.spiritualName || 'Sem nome espiritual'}</div>
                           <div className="text-[10px] text-slate-400">RG: {row.rg}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`text-xs font-bold px-2 py-1 rounded-lg inline-block ${row.participationType === 'hosting' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {row.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}
+                            {row.hostingStatus && (
+                              <span className={`block text-[8px] uppercase tracking-tighter ${row.hostingStatus === 'paid' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                {row.hostingStatus === 'paid' ? 'Pago' : 'Pendente'}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1">
@@ -282,13 +293,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   </tbody>
                 </table>
               )}
-            </div>
-            
-            <div className="p-4 bg-slate-50 text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-100">
-              <div className="flex items-center gap-2">
-                <Clock size={12} /> Última sincronização em: {new Date().toLocaleTimeString()}
-              </div>
-              <div>Banco de Dados Transparente</div>
             </div>
           </div>
         </div>

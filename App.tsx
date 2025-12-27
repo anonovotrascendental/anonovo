@@ -1,17 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
+  User, 
+  Calendar, 
+  Phone, 
+  Info, 
+  CheckCircle, 
   Leaf, 
   Lock, 
-  Calendar, 
-  MapPin, 
-  CheckCircle, 
-  Send, 
-  User, 
-  Utensils, 
-  Info, 
-  Phone,
-  Sparkles
+  X, 
+  Home,
+  ChevronRight,
+  ArrowLeft,
+  Copy,
+  Check,
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { AppView, RegistrationFormData, ParticipationDays } from './types';
 import { 
@@ -19,7 +23,8 @@ import {
   ADMIN_PASSWORD, 
   ORGANIZER_PHONE, 
   GOOGLE_SCRIPT_URL,
-  BLOOD_TYPES 
+  BLOOD_TYPES,
+  ACCOMMODATION_CONFIG
 } from './constants';
 import { Input, Textarea } from './components/Input';
 import { Button } from './components/Button';
@@ -27,12 +32,16 @@ import { AiAssistant } from './components/AiAssistant';
 import AdminDashboard from './components/AdminDashboard';
 import { getSpiritualGuidance } from './services/geminiService';
 
-const App: React.FC = () => {
+const App = () => {
   const [view, setView] = useState<AppView>('form');
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [spiritualMessage, setSpiritualMessage] = useState<string | null>(null);
-  
+  const [copied, setCopied] = useState(false);
+
   const [formData, setFormData] = useState<RegistrationFormData>({
+    participationType: null,
+    hostingStatus: null,
     spiritualName: '',
     civilName: '',
     rg: '',
@@ -47,291 +56,292 @@ const App: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Explicitly using ParticipationDays keys to fix type inference issues
-  const toggleDay = (day: keyof ParticipationDays) => {
+  const handleDayChange = (day: keyof ParticipationDays) => {
     setFormData(prev => ({
       ...prev,
       days: { ...prev.days, [day]: !prev.days[day] }
     }));
   };
 
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const selectedDaysList: string[] = [];
-    if (formData.days.day31) selectedDaysList.push("31/Dez");
-    if (formData.days.day01) selectedDaysList.push("01/Jan");
-    if (formData.days.day02) selectedDaysList.push("02/Jan");
 
-    if (selectedDaysList.length === 0) {
-      alert("Por favor, selecione ao menos um dia de participação.");
+    if (step === 1) {
+      if (!formData.participationType) {
+        alert("Selecione como será sua participação.");
+        return;
+      }
+      if (formData.participationType === 'hosting' && !formData.hostingStatus) {
+        alert("Informe o status da sua reserva.");
+        return;
+      }
+      if (formData.participationType === 'dayuse' && !Object.values(formData.days).some(v => v)) {
+        alert("Selecione ao menos um dia.");
+        return;
+      }
+      setStep(2);
       return;
     }
 
     setLoading(true);
 
-    try {
-      // 1. Fetch AI Guidance (Gemini)
-      const guidance = await getSpiritualGuidance(formData.civilName, `Desejo vir no evento nos dias ${selectedDaysList.join(', ')}`);
-      setSpiritualMessage(guidance);
+    const selectedDaysList: string[] = [];
+    if (formData.participationType === 'hosting') {
+      selectedDaysList.push("Hospedagem (Pacote 5 dias)");
+    } else {
+      if (formData.days.day31) selectedDaysList.push("31/Dez (Quarta)");
+      if (formData.days.day01) selectedDaysList.push("01/Jan (Quinta)");
+      if (formData.days.day02) selectedDaysList.push("02/Jan (Sexta)");
+    }
 
-      // 2. Google Sheets Integration
+    const payload = { ...formData, selectedDays: selectedDaysList.join(', ') };
+
+    try {
+      const guidance = await getSpiritualGuidance(formData.civilName, `Tipo: ${formData.participationType}. Dias: ${payload.selectedDays}`);
+      setSpiritualMessage(guidance ?? null);
+
       if (GOOGLE_SCRIPT_URL) {
         await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            selectedDays: selectedDaysList.join(', '),
-            timestamp: new Date().toISOString()
-          })
+          body: JSON.stringify(payload)
         });
       }
 
-      // 3. WhatsApp Redirect
-      const message = `*Inscrição - Ano Novo Transcendental* 🌸\n` +
-        `*Com Srila Gurudeva Vana Goswami Maharaj*\n\n` +
+      const message = `*Inscrição - ${EVENT_INFO.title}* 🌸\n` +
+        `*Participação:* ${formData.participationType === 'hosting' ? 'Hospedagem' : 'Day Use'}\n` +
+        `*Reserva:* ${formData.hostingStatus === 'paid' ? 'Já pago' : formData.hostingStatus === 'reserving' ? 'Vou reservar' : 'N/A'}\n` +
         `*Nome:* ${formData.civilName} ${formData.spiritualName ? `(${formData.spiritualName})` : ''}\n` +
         `*RG:* ${formData.rg}\n` +
-        `*Dias:* ${selectedDaysList.join(', ')}\n` +
+        `*Dias:* ${payload.selectedDays}\n` +
         `*Restrições:* ${formData.restrictions || 'Nenhuma'}\n\n` +
         `_Enviado pelo App Oficial_`;
 
       window.open(`https://wa.me/${ORGANIZER_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
-      
       setView('success');
     } catch (error) {
       console.error(error);
-      alert("Houve um erro ao processar sua inscrição. Tente novamente.");
+      alert("Erro ao processar inscrição.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Views ---
+  if (view === 'login') return (
+    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
+        <div className="bg-amber-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600">
+          <Lock size={24} />
+        </div>
+        <h2 className="text-xl font-bold mb-4 text-gray-800 font-serif">Acesso Administrativo</h2>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const p = (e.currentTarget.elements.namedItem('pass') as HTMLInputElement).value;
+          if (p === ADMIN_PASSWORD) setView('admin');
+          else alert('Senha incorreta');
+        }}>
+          <input name="pass" type="password" placeholder="Senha" className="w-full border p-3 rounded-xl mb-4 text-center" required />
+          <Button className="w-full">Entrar</Button>
+        </form>
+        <button onClick={() => setView('form')} className="mt-4 text-gray-500 text-sm hover:underline">Voltar</button>
+      </div>
+    </div>
+  );
 
-  if (view === 'login') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100 text-center">
-          <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock size={32} />
+  if (view === 'admin') return <AdminDashboard onBack={() => setView('form')} />;
+
+  if (view === 'success') return (
+    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-4 border-amber-500">
+        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-slate-800 mb-2 font-serif">Hare Krishna! 🙏</h2>
+        <p className="text-gray-600 mb-6">Inscrição iniciada. Se o WhatsApp abriu, envie a mensagem para confirmar.</p>
+        
+        {spiritualMessage && (
+          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 mb-6 italic text-amber-900 text-sm">
+            "{spiritualMessage}"
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Área Administrativa</h2>
-          <p className="text-slate-500 mb-8 text-sm">Somente para organizadores autorizados.</p>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const pass = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value;
-            if (pass === ADMIN_PASSWORD) setView('admin');
-            else alert('Senha incorreta!');
-          }} className="space-y-4">
-            <Input name="password" type="password" placeholder="Senha de Acesso" required />
-            <Button className="w-full">Entrar no Painel</Button>
-            <button onClick={() => setView('form')} type="button" className="text-sm text-slate-400 hover:text-slate-600 underline">Voltar para Inscrição</button>
-          </form>
-        </div>
+        )}
+
+        <Button variant="outline" onClick={() => { setView('form'); setStep(1); }} className="w-full">Nova Inscrição</Button>
       </div>
-    );
-  }
-
-  if (view === 'admin') {
-    return <AdminDashboard onBack={() => setView('form')} />;
-  }
-
-  if (view === 'success') {
-    return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center p-6">
-        <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-10 text-center border-t-8 border-amber-600">
-          <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-slate-800 mb-4 font-serif">Hare Krishna! 🙏</h2>
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sua inscrição foi iniciada com sucesso. Se o seu WhatsApp abriu, **não esqueça de enviar a mensagem** para confirmar sua presença com os organizadores.
-          </p>
-
-          {spiritualMessage && (
-            <div className="bg-amber-50 p-6 rounded-2xl border border-amber-200 mb-8 relative">
-              <Sparkles className="absolute -top-3 -right-3 text-amber-500 bg-white rounded-full p-1" size={24} />
-              <p className="text-amber-900 font-medium italic">"{spiritualMessage}"</p>
-              <p className="text-xs text-amber-700/50 mt-2">— Assistente de IA</p>
-            </div>
-          )}
-
-          <Button onClick={() => setView('form')} variant="outline" className="w-full">Realizar Nova Inscrição</Button>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen pb-20 bg-amber-50/30">
-      {/* Header / Hero */}
-      <div className="relative h-[400px] overflow-hidden">
-        <img 
-          src="https://picsum.photos/id/1022/1920/1080?blur=2" 
-          alt="Transcendental New Year Background"
-          className="absolute inset-0 w-full h-full object-cover scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-amber-900/90 via-amber-900/40 to-transparent"></div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 mt-10">
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-full mb-6 border border-white/20">
-            <Leaf size={40} className="text-white" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 drop-shadow-xl font-serif">
-            {EVENT_INFO.title}
-          </h1>
-          <p className="text-xl md:text-2xl text-amber-100 font-medium mb-6">
-            Com {EVENT_INFO.guest}
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm border border-white/30">
-              <Calendar size={16} /> {EVENT_INFO.dates}
+    <div className="min-h-screen bg-amber-50 py-8 px-4 font-sans flex flex-col items-center">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-amber-100">
+        
+        {/* Cabeçalho Original */}
+        <div className="bg-gradient-to-b from-amber-400 to-amber-600 p-8 text-center relative">
+          <div className="absolute top-4 left-4 opacity-30 text-white"><Leaf size={40} /></div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-1 text-white drop-shadow-md font-serif">{EVENT_INFO.title}</h1>
+          <p className="text-lg text-amber-100 font-medium">{EVENT_INFO.venue} • {EVENT_INFO.guest}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <span className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-1 rounded-full text-xs backdrop-blur-sm font-bold">
+              <Calendar size={14}/> {EVENT_INFO.dates}
             </span>
-            <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm border border-white/30">
-              <MapPin size={16} /> {EVENT_INFO.location}
+            <span className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-1 rounded-full text-xs backdrop-blur-sm font-bold">
+              <Clock size={14}/> Início 18:00
+            </span>
+            <span className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-1 rounded-full text-xs backdrop-blur-sm font-bold">
+              <MapPin size={14}/> {EVENT_INFO.location}
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto -mt-20 px-4 relative z-10">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-          <div className="p-4 bg-blue-600 text-white text-center text-sm font-semibold flex items-center justify-center gap-2">
-            <Info size={16} /> Day Use Gratuito • Colabore na Inscrição para o Prasadam
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 flex gap-3 text-sm text-blue-800">
+            <Info size={18} className="shrink-0" />
+            <span>{step === 1 ? 'Selecione como deseja participar para calcularmos o Prasadam.' : 'Preencha seus dados para finalizar a inscrição.'}</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-12">
-            {/* Step 1: Identity */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
-                  <User size={20} />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-800">Dados de Identificação</h2>
-              </div>
+          {step === 1 ? (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <h3 className="text-lg font-bold text-amber-700 flex items-center gap-2 border-b pb-2"><Home size={20}/> Hospedagem</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input 
-                  label="Nome Civil Completo *" 
-                  name="civilName" 
-                  value={formData.civilName} 
-                  onChange={handleInputChange} 
-                  placeholder="Seu nome oficial" 
-                  required 
-                />
-                <Input 
-                  label="Nome Espiritual" 
-                  name="spiritualName" 
-                  value={formData.spiritualName} 
-                  onChange={handleInputChange} 
-                  placeholder="Nome dado pelo mestre (se houver)" 
-                />
-                <Input 
-                  label="RG *" 
-                  name="rg" 
-                  value={formData.rg} 
-                  onChange={handleInputChange} 
-                  placeholder="Documento de Identidade" 
-                  required 
-                />
-                <Input 
-                  label="WhatsApp *" 
-                  name="phone" 
-                  type="tel"
-                  value={formData.phone} 
-                  onChange={handleInputChange} 
-                  placeholder="(DDD) 9 0000-0000" 
-                  required 
-                />
-              </div>
-            </section>
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, participationType: 'hosting' }))}
+                  className={`p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center ${formData.participationType === 'hosting' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500' : 'border-gray-100 bg-gray-50'}`}
+                >
+                  <div>
+                    <p className="font-bold text-gray-800">Vou me hospedar</p>
+                    <p className="text-xs text-gray-500">Pacote {ACCOMMODATION_CONFIG.days} - R$ {ACCOMMODATION_CONFIG.price.toFixed(2).replace('.', ',')}</p>
+                  </div>
+                  {formData.participationType === 'hosting' && <CheckCircle className="text-amber-600" size={20} />}
+                </button>
 
-            {/* Step 2: Logistics & Prasadam */}
-            <section className="space-y-8">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                  <Utensils size={20} />
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, participationType: 'dayuse', hostingStatus: null }))}
+                  className={`p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center ${formData.participationType === 'dayuse' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-500' : 'border-gray-100 bg-gray-50'}`}
+                >
+                  <div>
+                    <p className="font-bold text-gray-800">Day Use (Apenas visitar)</p>
+                    <p className="text-xs text-gray-500">Vou para as atividades e volto pra casa</p>
+                  </div>
+                  {formData.participationType === 'dayuse' && <CheckCircle className="text-amber-600" size={20} />}
+                </button>
+              </div>
+
+              {/* Lógica de Hospedagem */}
+              {formData.participationType === 'hosting' && (
+                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100 space-y-4 animate-in slide-in-from-top-2">
+                  <p className="text-center font-bold text-blue-900 text-sm">Já tem reserva confirmada?</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'paid' }))} className={`py-2 rounded-xl font-bold text-sm border-2 ${formData.hostingStatus === 'paid' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-100'}`}>Sim, já paguei</button>
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, hostingStatus: 'reserving' }))} className={`py-2 rounded-xl font-bold text-sm border-2 ${formData.hostingStatus === 'reserving' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-100'}`}>Vou reservar</button>
+                  </div>
+
+                  {formData.hostingStatus === 'reserving' && (
+                    <div className="bg-white rounded-xl p-4 border border-blue-100 space-y-3">
+                      <p className="text-emerald-600 text-xs font-bold flex items-center gap-1"><Check size={14}/> Dados para PIX</p>
+                      <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center group">
+                        <span className="text-xs font-mono text-gray-600 truncate">{ACCOMMODATION_CONFIG.pixKey}</span>
+                        <button type="button" onClick={() => copyText(ACCOMMODATION_CONFIG.pixKey)} className="text-blue-500 hover:text-blue-700 transition-colors">
+                          {copied ? <Check size={16}/> : <Copy size={16}/>}
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-gray-500 leading-tight">
+                        <p><strong>Nome:</strong> {ACCOMMODATION_CONFIG.pixName}</p>
+                        <p className="text-emerald-600 font-bold mt-1">Valor: R$ {ACCOMMODATION_CONFIG.price.toFixed(2).replace('.', ',')}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">Presença e Saúde</h2>
-              </div>
+              )}
 
-              <div className="space-y-4">
-                <label className="text-sm font-semibold text-slate-700 block">Em quais dias você participará? *</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Fixed: Use as const to ensure literal types for d.id, matching ParticipationDays keys */}
-                  {([
-                    { id: 'day31', label: '31/Dez', sub: 'Virada' },
-                    { id: 'day01', label: '01/Jan', sub: 'Novo Ciclo' },
-                    { id: 'day02', label: '02/Jan', sub: 'Encerramento' }
-                  ] as const).map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => toggleDay(d.id)}
-                      className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 group relative overflow-hidden ${
-                        formData.days[d.id] 
-                        ? 'bg-amber-600 border-amber-600 text-white shadow-xl shadow-amber-600/30' 
-                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300'
-                      }`}
-                    >
-                      <span className="text-lg font-bold">{d.label}</span>
-                      <span className={`text-xs ${formData.days[d.id] ? 'text-amber-100' : 'text-slate-400'}`}>{d.sub}</span>
-                      {formData.days[d.id] && (
-                        <div className="absolute top-2 right-2"><CheckCircle size={16} /></div>
-                      )}
-                    </button>
-                  ))}
+              {/* Lógica de Day Use */}
+              {formData.participationType === 'dayuse' && (
+                <div className="space-y-4 animate-in slide-in-from-top-2">
+                  <p className="text-sm font-bold text-gray-700">Quais dias virá? (Para o Prasadam)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: 'day31', label: '31 Dez', sub: 'Quarta (Virada)' },
+                      { id: 'day01', label: '01 Jan', sub: 'Quinta' },
+                      { id: 'day02', label: '02 Jan', sub: 'Sexta' }
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => handleDayChange(d.id as keyof ParticipationDays)}
+                        className={`p-3 rounded-xl border-2 text-center transition-all ${formData.days[d.id as keyof ParticipationDays] ? 'border-amber-500 bg-amber-50 font-bold text-amber-900' : 'border-gray-100 bg-gray-50 text-gray-500'}`}
+                      >
+                        {d.label}
+                        <p className="text-[10px] opacity-60 font-normal">{d.sub}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <h3 className="text-lg font-bold text-amber-700 flex items-center gap-2 border-b pb-2"><User size={20}/> Seus Dados</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Input required name="civilName" label="Nome Completo *" value={formData.civilName} onChange={handleInputChange} placeholder="Seu nome oficial" />
+                <Input name="spiritualName" label="Nome Espiritual" value={formData.spiritualName} onChange={handleInputChange} placeholder="Se houver" />
+                <Input required name="rg" label="RG *" value={formData.rg} onChange={handleInputChange} placeholder="Documento" />
+                <Input required type="tel" name="phone" label="WhatsApp *" value={formData.phone} onChange={handleInputChange} placeholder="(DDD) 9..." />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">Tipo Sanguíneo</label>
-                  <select 
-                    name="bloodType" 
-                    value={formData.bloodType} 
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-amber-500 outline-none transition-all"
-                  >
+                  <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-amber-500 outline-none">
                     <option value="">Selecione...</option>
                     {BLOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <Textarea 
-                    label="Restrições Alimentares / Alergias" 
-                    name="restrictions" 
-                    value={formData.restrictions} 
-                    onChange={handleInputChange} 
-                    placeholder="Ex: Vegano, Alérgico a amendoim, Sem lactose..." 
-                  />
+                  <Textarea name="restrictions" label="Restrições Alimentares" value={formData.restrictions} onChange={handleInputChange} placeholder="Alergias, Vegano, etc." />
                 </div>
               </div>
-            </section>
+            </div>
+          )}
 
-            <Button 
-              type="submit" 
-              isLoading={loading} 
-              className="w-full h-16 text-xl rounded-2xl shadow-2xl"
+          <div className="pt-4 border-t flex gap-3">
+            {step === 2 && (
+              <button type="button" onClick={() => setStep(1)} className="p-4 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all">
+                <ArrowLeft size={24} />
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 flex justify-center items-center gap-2 text-lg disabled:opacity-50"
             >
-              <Send className="mr-3" size={24} /> Confirmar Minha Presença
-            </Button>
-          </form>
-        </div>
-
-        <footer className="mt-12 text-center text-slate-400 text-sm space-y-4">
-          <p>© 2025 Ano Novo Transcendental • Hare Krishna Bhakti Yoga</p>
-          <div className="flex justify-center items-center gap-6">
-            <button onClick={() => setView('login')} className="flex items-center gap-2 hover:text-amber-600 transition-colors">
-              <Lock size={14} /> Portal do Organizador
+              {loading ? 'Processando...' : (
+                <>
+                  {step === 1 ? 'Próximo Passo' : 'Confirmar Presença'}
+                  <ChevronRight size={20} />
+                </>
+              )}
             </button>
-            <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-green-600 transition-colors">
-              <Phone size={14} /> Suporte WhatsApp
-            </a>
           </div>
-        </footer>
-      </main>
+        </form>
+      </div>
+
+      {/* Footer Original */}
+      <footer className="text-center mt-12 text-amber-800/60 text-sm space-y-3">
+        <p>Hare Krishna • {EVENT_INFO.location} 2025</p>
+        <div className="flex justify-center gap-6">
+          <button onClick={() => setView('login')} className="flex items-center gap-1 hover:text-amber-800 transition">
+            <Lock size={12} /> Acesso Admin
+          </button>
+          <a href={`https://wa.me/${ORGANIZER_PHONE}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition">
+            <Phone size={12} /> Suporte
+          </a>
+        </div>
+      </footer>
 
       <AiAssistant />
     </div>
